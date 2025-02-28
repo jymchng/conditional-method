@@ -8,3 +8,5 @@ wheels/
 
 # Virtual environments
 .venv
+# because this is a library, we don't need a lock file
+uv.lock
