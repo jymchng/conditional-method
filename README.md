@@ -9,9 +9,6 @@
   <a href="https://github.com/jymchng/conditional-method/blob/main/LICENSE">
     <img src="https://img.shields.io/pypi/l/conditional-method.svg" alt="License">
   </a>
-  <a href="https://pepy.tech/project/conditional-method">
-    <img src="https://static.pepy.tech/badge/conditional-method" alt="Downloads">
-  </a>
   <a href="https://github.com/jymchng/conditional-method/stargazers">
     <img src="https://img.shields.io/github/stars/jymchng/conditional-method.svg" alt="GitHub stars">
   </a>
@@ -21,20 +18,9 @@
   <a href="https://github.com/jymchng/conditional-method/issues">
     <img src="https://img.shields.io/github/issues/jymchng/conditional-method.svg" alt="GitHub issues">
   </a>
-  <a href="https://codecov.io/gh/jymchng/conditional-method">
-    <img src="https://codecov.io/gh/jymchng/conditional-method/branch/main/graph/badge.svg" alt="codecov">
-  </a>
-  <a href="https://github.com/jymchng/conditional-method/actions">
-    <img src="https://github.com/jymchng/conditional-method/workflows/Python%20Tests/badge.svg" alt="Build Status">
-  </a>
-  <a href="https://github.com/psf/black">
-    <img src="https://img.shields.io/badge/code%20style-black-000000.svg" alt="Code style: black">
-  </a>
-  <a href="https://pycqa.github.io/isort/">
-    <img src="https://img.shields.io/badge/%20imports-isort-%231674b1" alt="Imports: isort">
-  </a>
-</div>
 
+</div>
+<br>
 A powerful Python library that enables conditional method implementation based on runtime, initial conditions, at program startup or latest at class building time, allowing you to define different method implementations that are selected at when your classes are being built according to specific conditions.
 
 ## 🚀 Features
