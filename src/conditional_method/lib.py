@@ -20,7 +20,6 @@ def _get_dispatcher_class():
             __slots__ = ('conditions', 'func', 'resolved')
             _instance = UNDEFINED
             conditions: list
-            resolved: bool
             
             def __new__(cls, _func, _condition):
                 if cls._instance is UNDEFINED:
@@ -34,8 +33,6 @@ def _get_dispatcher_class():
             def __set_name__(self, owner, name):
                 if not any(self.conditions):
                     raise ValueError(f"At least one condition must be True for the `@src.conditional_method` decorator decorated on method: `.{name}(..)` for the class `{owner.__name__}`; the conditions are: `{self.conditions}`")
-                self.resolved = True
-                self.resolved # trigger `__get__`
                 getattr(owner, name)
                 setattr(owner, name, self.func)
                 
