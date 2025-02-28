@@ -1,5 +1,39 @@
-# Conditional Method
-
+<div align="center">
+<h1>Conditional Method</h1>
+  <a href="https://pypi.org/project/conditional-method/">
+    <img src="https://img.shields.io/pypi/v/conditional-method.svg" alt="PyPI version">
+  </a>
+  <a href="https://pypi.org/project/conditional-method/">
+    <img src="https://img.shields.io/pypi/pyversions/conditional-method.svg" alt="Python Versions">
+  </a>
+  <a href="https://github.com/jymchng/conditional-method/blob/main/LICENSE">
+    <img src="https://img.shields.io/pypi/l/conditional-method.svg" alt="License">
+  </a>
+  <a href="https://pepy.tech/project/conditional-method">
+    <img src="https://static.pepy.tech/badge/conditional-method" alt="Downloads">
+  </a>
+  <a href="https://github.com/jymchng/conditional-method/stargazers">
+    <img src="https://img.shields.io/github/stars/jymchng/conditional-method.svg" alt="GitHub stars">
+  </a>
+  <a href="https://github.com/jymchng/conditional-method/network">
+    <img src="https://img.shields.io/github/forks/jymchng/conditional-method.svg" alt="GitHub forks">
+  </a>
+  <a href="https://github.com/jymchng/conditional-method/issues">
+    <img src="https://img.shields.io/github/issues/jymchng/conditional-method.svg" alt="GitHub issues">
+  </a>
+  <a href="https://codecov.io/gh/jymchng/conditional-method">
+    <img src="https://codecov.io/gh/jymchng/conditional-method/branch/main/graph/badge.svg" alt="codecov">
+  </a>
+  <a href="https://github.com/jymchng/conditional-method/actions">
+    <img src="https://github.com/jymchng/conditional-method/workflows/Python%20Tests/badge.svg" alt="Build Status">
+  </a>
+  <a href="https://github.com/psf/black">
+    <img src="https://img.shields.io/badge/code%20style-black-000000.svg" alt="Code style: black">
+  </a>
+  <a href="https://pycqa.github.io/isort/">
+    <img src="https://img.shields.io/badge/%20imports-isort-%231674b1" alt="Imports: isort">
+  </a>
+</div>
 
 A powerful Python library that enables conditional method implementation based on runtime, initial conditions, at program startup or latest at class building time, allowing you to define different method implementations that are selected at when your classes are being built according to specific conditions.
 
@@ -20,23 +54,66 @@ pip install conditional-method
 
 ## 🔧 Usage
 
-The `@conditional_method` decorator allows you to define method implementations that are conditionally activated based on runtime conditions.
+A decorator `@conditional_method` that selects a method implementation (among those that are identically named) for a class during class build time, leaving only the selected method in its attributes set when the class is built, i.e. 'well-formed'.
 
 ### Basic Example
 
 ```python
 from conditional_method import conditional_method
 
-class FileProcessor:
-    @conditional_method(condition=lambda: True)
-    def process_file(self, file_path):
-        """This implementation will be used because the condition is True."""
-        print(f"Processing file: {file_path}")
-        
-    @conditional_method(condition=lambda: False)
-    def process_file(self, file_path):
-        """This implementation will not be used because the condition is False."""
-        print(f"Alternative processing: {file_path}")
+import os
+
+ENVIRONMENT_KEY = "ENVIRONMENT_KEY"
+os.environ[ENVIRONMENT_KEY] = "production"
+
+ENVIRONMENT = os.environ[ENVIRONMENT_KEY]
+
+
+class Worker:
+    __slots__ = ()
+
+    @conditional_method(condition=ENVIRONMENT == "production")
+    def work(self, *args, **kwargs):
+        print("Working in production")
+        print(f"Args: {args}")
+        print(f"Kwargs: {kwargs}")
+        return "production"
+
+    @conditional_method(condition=ENVIRONMENT == "development")
+    def work(self, *args, **kwargs):
+        print("Working in development")
+        print(f"Args: {args}")
+        print(f"Kwargs: {kwargs}")
+        return "development"
+
+    @conditional_method(condition=ENVIRONMENT == "staging")
+    def work(self, *args, **kwargs):
+        print("Working in staging")
+        print(f"Args: {args}")
+        print(f"Kwargs: {kwargs}")
+        return "staging"
+
+
+worker = Worker()
+
+print(f"ENVIRONMENT: {ENVIRONMENT}")  # ENVIRONMENT: production
+
+print(f"Worker.__dict__: {Worker.__dict__}")
+# only one of the `work` methods will be bound to the Worker class
+# Worker.__dict__: {
+#     '__module__': '__main__',
+#     '__slots__': (),
+#     'work': <function Worker.work at 0x7f6151683670>,
+#     '__doc__': None
+# }
+
+print(worker.work(1, 2, 3, a=4, b=5))
+
+# Working in production
+# Args: (1, 2, 3)
+# Kwargs: {'a': 4, 'b': 5}
+# production (return value of the selected method)
+
 ```
 
 ### Dynamic Conditions

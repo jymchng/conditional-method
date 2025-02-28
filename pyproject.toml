@@ -1,7 +1,7 @@
 [project]
 name = "conditional-method"
 version = "0.1.0"
-description = "Add your description here"
+description = "A decorator `@conditional_method` that selects a method implementation (among those that are identically named) for a class during class build time, leaving only the selected method in its attributes set when the class is built, i.e. 'well-formed'."
 readme = "README.md"
 requires-python = ">=3.8"
 dependencies = []
