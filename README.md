@@ -1,5 +1,10 @@
 <div align="center">
 <h1>Conditional Method</h1>
+<h2>[Repository is a Work In Progress]</h2>
+<div><em>The code is very usable though...</em></div>
+  ____
+
+
   <a href="https://pypi.org/project/conditional-method/">
     <img src="https://img.shields.io/pypi/v/conditional-method.svg" alt="PyPI version">
   </a>
@@ -18,7 +23,6 @@
   <a href="https://github.com/jymchng/conditional-method/issues">
     <img src="https://img.shields.io/github/issues/jymchng/conditional-method.svg" alt="GitHub issues">
   </a>
-
 </div>
 <br>
 A powerful Python library that enables conditional method implementation based on runtime, initial conditions, at program startup or latest at class building time, allowing you to define different method implementations that are selected at when your classes are being built according to specific conditions.
