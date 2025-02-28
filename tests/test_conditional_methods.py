@@ -1,6 +1,6 @@
 import os
 import pytest
-from src.conditional_method.lib import conditional_method, _get_dispatcher_class
+from src.conditional_method.lib import conditional_method, _get_selector_class
 
 
 @pytest.fixture(autouse=True)
@@ -16,162 +16,193 @@ def setup_environment():
 
 
 class TestConditionalMethods:
-    
     def test_class_a_monday_should_use_classmethod(self):
         """Test that A.monday is correctly resolved to the classmethod implementation"""
+
         # Define test class
         class A:
             """The correct `.monday(..)` is a `classmethod`"""
+
             __slots__ = ()
-            
+
             @conditional_method(condition=True)
             def monday(self):
                 return "Instance of A " + "A::Monday"
-                
-            @conditional_method(condition=lambda: os.environ.get("DEBUG", "False") == "False")
+
+            @conditional_method(
+                condition=lambda: os.environ.get("DEBUG", "False") == "False"
+            )
             def monday(self):
                 return "Instance of A " + "A::Another Monday"
-            
-            @conditional_method(condition=lambda: os.environ.get("DEBUG", "False") == "True")
+
+            @conditional_method(
+                condition=lambda: os.environ.get("DEBUG", "False") == "True"
+            )
             @classmethod
             def monday(cls):
                 return "Class of A " + "A::Yet Another Monday"
-            
-            @conditional_method(condition=lambda: os.environ.get("DEBUG", "False") == "True")  # this is ignored
+
+            @conditional_method(
+                condition=lambda: os.environ.get("DEBUG", "False") == "True"
+            )  # this is ignored
             @staticmethod
             def monday():
                 return "Staticmethod of A" + "A::Yet Another Good Monday"
-            
+
             def tuesday(self):
                 return "Instance of A " + "A::Tuesday"
-        
+
         # Test class method implementation
         result = A.monday(A())
         assert result == "Instance of A A::Monday"
-        
+
         # Verify it's the same when called on an instance
         instance_result = A().monday()
         assert instance_result == "Instance of A A::Monday"
-        
+
         # Test the undecorated method
         assert A().tuesday() == "Instance of A " + "A::Tuesday"
         assert A.tuesday(A()) == "Instance of A " + "A::Tuesday"
-    
+
     def test_class_b_monday_should_use_instance_method(self):
         """Test that B.monday is correctly resolved to the instance method implementation"""
+
         class B:
             """The correct `.monday(..)` is a regular instance method"""
+
             __slots__ = ()
-            
-            @conditional_method(condition=lambda: os.environ.get("DEBUG", "False") == "False")
+
+            @conditional_method(
+                condition=lambda: os.environ.get("DEBUG", "False") == "False"
+            )
             def monday(self):
                 return "Instance of B" + "B::Monday"
-                
-            @conditional_method(condition=lambda: os.environ.get("DEBUG", "False") == "True")
+
+            @conditional_method(
+                condition=lambda: os.environ.get("DEBUG", "False") == "True"
+            )
             def monday(self):
                 return "Instance of B" + "B::Another Monday"
-            
-            @conditional_method(condition=lambda: os.environ.get("DEBUG", "False") == "False")
+
+            @conditional_method(
+                condition=lambda: os.environ.get("DEBUG", "False") == "False"
+            )
             def monday(self):
                 return "Instance of B" + "B::Yet Another Monday"
-            
+
             def tuesday(self):
                 return "Instance of B" + "B::Tuesday"
-        
+
         # Test instance method implementation
         result = B().monday()
         assert result == "Instance of B" + "B::Another Monday"
-        
+
         # Test when called via class
         class_result = B.monday(B())
         assert class_result == "Instance of B" + "B::Another Monday"
-        
+
         # Test the undecorated method
         assert B().tuesday() == "Instance of B" + "B::Tuesday"
         assert B.tuesday(B()) == "Instance of B" + "B::Tuesday"
-    
+
     def test_class_c_monday_should_use_staticmethod(self):
         """Test that C.monday is correctly resolved to the staticmethod implementation"""
+
         class C:
             """The correct `.monday(..)` is a `staticmethod`"""
+
             __slots__ = ()
-            
-            @conditional_method(condition=lambda: os.environ.get("DEBUG", "False") == "False")
+
+            @conditional_method(
+                condition=lambda: os.environ.get("DEBUG", "False") == "False"
+            )
             def monday(self):
                 return "Instance of C" + "C::Monday"
-                
-            @conditional_method(condition=lambda: os.environ.get("DEBUG", "False") == "True")
+
+            @conditional_method(
+                condition=lambda: os.environ.get("DEBUG", "False") == "True"
+            )
             @staticmethod
             def monday():
                 return "Staticmethod of C" + "C::Another Monday"
-            
-            @conditional_method(condition=lambda: os.environ.get("DEBUG", "False") == "False")
+
+            @conditional_method(
+                condition=lambda: os.environ.get("DEBUG", "False") == "False"
+            )
             def monday(self):
                 return "Instance of C" + "C:: Yet Monday"
-            
+
             def tuesday(self):
                 return "Instance of C" + "C::Tuesday"
-        
+
         # Test staticmethod implementation
         result = C.monday()
         assert result == "Staticmethod of C" + "C::Another Monday"
-        
+
         # Test when called via instance
         instance_result = C().monday()
         assert instance_result == "Staticmethod of C" + "C::Another Monday"
-        
+
         # Test the undecorated method
         assert C().tuesday() == "Instance of C" + "C::Tuesday"
         assert C.tuesday(C()) == "Instance of C" + "C::Tuesday"
-    
+
     def test_class_d_monday_should_use_instance_method(self):
         """Test that D.monday is correctly resolved to the instance method implementation"""
+
         class D:
             """The correct `.monday(..)` is a regular instance method but it is the last `.monday(..)` method defined"""
+
             __slots__ = ()
-            
-            @conditional_method(condition=lambda: os.environ.get("DEBUG", "False") == "False")
+
+            @conditional_method(
+                condition=lambda: os.environ.get("DEBUG", "False") == "False"
+            )
             def monday(self):
                 return "Instance of D" + "D::Monday"
-                
-            @conditional_method(condition=lambda: os.environ.get("DEBUG", "False") == "True")
+
+            @conditional_method(
+                condition=lambda: os.environ.get("DEBUG", "False") == "True"
+            )
             def monday(self):
                 return "Instance of D" + "D::Another Monday"
-            
+
             def tuesday(self):
                 return "Instance of D" + "D::Tuesday"
-        
+
         # Test instance method implementation
         result = D().monday()
         assert result == "Instance of D" + "D::Another Monday"
-        
+
         # Test when called via class
         class_result = D.monday(D())
         assert class_result == "Instance of D" + "D::Another Monday"
-        
+
         # Test the undecorated method
         assert D().tuesday() == "Instance of D" + "D::Tuesday"
         assert D.tuesday(D()) == "Instance of D" + "D::Tuesday"
-    
+
     def test_normal_staticmethod_behavior(self):
         """Test that a normal staticmethod behaves as expected"""
+
         class G:
             @staticmethod
             def monday():
                 return "Staticmethod of G" + "G::Monday"
-        
+
         # Test staticmethod
         result = G.monday()
         assert result == "Staticmethod of G" + "G::Monday"
-        
+
         # Test when called via instance
         instance_result = G().monday()
         assert instance_result == "Staticmethod of G" + "G::Monday"
-    
+
     def test_dispatcher_class_caching(self):
         """Test that the dispatcher class is cached correctly"""
         # Test dispatcher class caching
-        assert _get_dispatcher_class(func_name="A") is not _get_dispatcher_class(func_name="B")
-        assert _get_dispatcher_class(func_name="A") is _get_dispatcher_class(func_name="A")
-        assert _get_dispatcher_class(func_name="B") is _get_dispatcher_class(func_name="B") 
-        
+        assert _get_selector_class(func_name="A") is not _get_selector_class(
+            func_name="B"
+        )
+        assert _get_selector_class(func_name="A") is _get_selector_class(func_name="A")
+        assert _get_selector_class(func_name="B") is _get_selector_class(func_name="B")
