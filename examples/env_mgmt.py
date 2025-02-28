@@ -35,8 +35,19 @@ class Worker:
 
 worker = Worker()
 
-print(f"ENVIRONMENT: {ENVIRONMENT}")
+print(f"ENVIRONMENT: {ENVIRONMENT}")  # ENVIRONMENT: production
 print(f"Worker.__dict__: {Worker.__dict__}")
 # only one of the `work` methods will be bound to the Worker class
+# Worker.__dict__: {
+#     '__module__': '__main__',
+#     '__slots__': (),
+#     'work': <function Worker.work at 0x7f6151683670>,
+#     '__doc__': None
+# }
 
 print(worker.work(1, 2, 3, a=4, b=5))
+
+# Working in production
+# Args: (1, 2, 3)
+# Kwargs: {'a': 4, 'b': 5}
+# production (return value of the selected method)

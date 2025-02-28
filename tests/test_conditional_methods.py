@@ -206,3 +206,28 @@ class TestConditionalMethods:
         )
         assert _get_selector_class(func_name="A") is _get_selector_class(func_name="A")
         assert _get_selector_class(func_name="B") is _get_selector_class(func_name="B")
+
+    def test_all_methods_with_false_condition(self):
+        """Test a class where all methods are decorated with False condition"""
+
+        # This should raise a RuntimeError because no condition is True
+        with pytest.raises(RuntimeError) as excinfo:
+
+            class AllFalseMethods:
+                @conditional_method(condition=False)
+                def method1(self):
+                    return "This should not be used"
+
+                @conditional_method(condition=False)
+                def method2(self):
+                    return "This should not be used either"
+
+                @conditional_method(condition=False)
+                def method3(self):
+                    return "This should not be used as well"
+
+        # Check that the error message mentions the condition issue
+        assert (
+            "Error calling __set_name__ on 'Selector' instance 'method1' in 'AllFalseMethods'"
+            in str(excinfo.value)
+        )

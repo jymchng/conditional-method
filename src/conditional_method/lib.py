@@ -17,7 +17,7 @@ def _get_selector_class():
             return _cache[func_name]
 
         class Selector:
-            __slots__ = ("conditions", "func", "resolved")
+            __slots__ = ("conditions", "func")
             _instance = UNDEFINED
             conditions: list
 
@@ -25,7 +25,6 @@ def _get_selector_class():
                 if cls._instance is UNDEFINED:
                     inst = object.__new__(cls)
                     inst.conditions = []
-                    inst.resolved = False
                     # so that for each (Type, Method), there is only one descriptor instance handling it
                     cls._instance = inst
                 return cls._instance
@@ -35,7 +34,6 @@ def _get_selector_class():
                     raise ValueError(
                         f"At least one condition must be True for the `@conditional_method` decorator decorated on method: `.{name}(..)` for the class `{owner.__name__}`; the conditions are: `{self.conditions}`"
                     )
-                getattr(owner, name)
                 setattr(owner, name, self.func)
 
             def __init__(self, func, condition):
