@@ -1,6 +1,6 @@
 import os
 import pytest
-from conditional_method.lib import conditional_method, _get_func_name
+from src.conditional_method.lib import conditional_method, _get_func_name
 
 ENV_KEY = "_conditional_method_env_"
 
