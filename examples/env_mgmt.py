@@ -1,9 +1,8 @@
-from src.conditional_method.lib import conditional_method
+from conditional_method import conditional_method
 
 import os
 
 ENVIRONMENT_KEY = "ENVIRONMENT_KEY"
-
 os.environ[ENVIRONMENT_KEY] = "production"
 
 ENVIRONMENT = os.environ[ENVIRONMENT_KEY]
@@ -12,21 +11,21 @@ ENVIRONMENT = os.environ[ENVIRONMENT_KEY]
 class Worker:
     __slots__ = ()
 
-    @conditional_method(condition=lambda: ENVIRONMENT == "production")
+    @conditional_method(condition=ENVIRONMENT == "production")
     def work(self, *args, **kwargs):
         print("Working in production")
         print(f"Args: {args}")
         print(f"Kwargs: {kwargs}")
         return "production"
 
-    @conditional_method(condition=lambda: ENVIRONMENT == "development")
+    @conditional_method(condition=ENVIRONMENT == "development")
     def work(self, *args, **kwargs):
         print("Working in development")
         print(f"Args: {args}")
         print(f"Kwargs: {kwargs}")
         return "development"
 
-    @conditional_method(condition=lambda: ENVIRONMENT == "staging")
+    @conditional_method(condition=ENVIRONMENT == "staging")
     def work(self, *args, **kwargs):
         print("Working in staging")
         print(f"Args: {args}")
