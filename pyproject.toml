@@ -17,9 +17,16 @@ build-backend = "hatchling.build"
 dev = [
     "nox>=2025.2.9",
     "ruff>=0.9.9",
+    "tomli>=2.0.1",
 ]
 test = [
     "pytest>=8.3.4",
+]
+examples = [
+    "fastapi>=0.115.10",
+    "httpx>=0.28.1",
+    "pydantic>=2.10.6",
+    "pyjwt>=2.9.0",
 ]
 
 [tool.ruff.lint]
