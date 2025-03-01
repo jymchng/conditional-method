@@ -1,6 +1,6 @@
 import os
 import pytest
-from src.conditional_method.lib import conditional_method, _get_selector_class
+from conditional_method import conditional_method
 
 
 @pytest.fixture(autouse=True)
@@ -30,20 +30,20 @@ class TestConditionalMethods:
                 return "Instance of A " + "A::Monday"
 
             @conditional_method(
-                condition=lambda: os.environ.get("DEBUG", "False") == "False"
+                condition=lambda f: os.environ.get("DEBUG", "False") == "False"
             )
             def monday(self):
                 return "Instance of A " + "A::Another Monday"
 
             @conditional_method(
-                condition=lambda: os.environ.get("DEBUG", "False") == "True"
+                condition=lambda f: os.environ.get("DEBUG", "False") == "True"
             )
             @classmethod
             def monday(cls):
                 return "Class of A " + "A::Yet Another Monday"
 
             @conditional_method(
-                condition=lambda: os.environ.get("DEBUG", "False") == "True"
+                condition=lambda f: os.environ.get("DEBUG", "False") == "True"
             )  # this is ignored
             @staticmethod
             def monday():
@@ -73,19 +73,19 @@ class TestConditionalMethods:
             __slots__ = ()
 
             @conditional_method(
-                condition=lambda: os.environ.get("DEBUG", "False") == "False"
+                condition=lambda f: os.environ.get("DEBUG", "False") == "False"
             )
             def monday(self):
                 return "Instance of B" + "B::Monday"
 
             @conditional_method(
-                condition=lambda: os.environ.get("DEBUG", "False") == "True"
+                condition=lambda f: os.environ.get("DEBUG", "False") == "True"
             )
             def monday(self):
                 return "Instance of B" + "B::Another Monday"
 
             @conditional_method(
-                condition=lambda: os.environ.get("DEBUG", "False") == "False"
+                condition=lambda f: os.environ.get("DEBUG", "False") == "False"
             )
             def monday(self):
                 return "Instance of B" + "B::Yet Another Monday"
@@ -114,20 +114,20 @@ class TestConditionalMethods:
             __slots__ = ()
 
             @conditional_method(
-                condition=lambda: os.environ.get("DEBUG", "False") == "False"
+                condition=lambda f: os.environ.get("DEBUG", "False") == "False"
             )
             def monday(self):
                 return "Instance of C" + "C::Monday"
 
             @conditional_method(
-                condition=lambda: os.environ.get("DEBUG", "False") == "True"
+                condition=lambda f: os.environ.get("DEBUG", "False") == "True"
             )
             @staticmethod
             def monday():
                 return "Staticmethod of C" + "C::Another Monday"
 
             @conditional_method(
-                condition=lambda: os.environ.get("DEBUG", "False") == "False"
+                condition=lambda f: os.environ.get("DEBUG", "False") == "False"
             )
             def monday(self):
                 return "Instance of C" + "C:: Yet Monday"
@@ -156,13 +156,13 @@ class TestConditionalMethods:
             __slots__ = ()
 
             @conditional_method(
-                condition=lambda: os.environ.get("DEBUG", "False") == "False"
+                condition=lambda f: os.environ.get("DEBUG", "False") == "False"
             )
             def monday(self):
                 return "Instance of D" + "D::Monday"
 
             @conditional_method(
-                condition=lambda: os.environ.get("DEBUG", "False") == "True"
+                condition=lambda f: os.environ.get("DEBUG", "False") == "True"
             )
             def monday(self):
                 return "Instance of D" + "D::Another Monday"
@@ -198,15 +198,6 @@ class TestConditionalMethods:
         instance_result = G().monday()
         assert instance_result == "Staticmethod of G" + "G::Monday"
 
-    def test_dispatcher_class_caching(self):
-        """Test that the dispatcher class is cached correctly"""
-        # Test dispatcher class caching
-        assert _get_selector_class(func_name="A") is not _get_selector_class(
-            func_name="B"
-        )
-        assert _get_selector_class(func_name="A") is _get_selector_class(func_name="A")
-        assert _get_selector_class(func_name="B") is _get_selector_class(func_name="B")
-
     def test_all_methods_with_false_condition(self):
         """Test a class where all methods are decorated with False condition"""
 
@@ -227,7 +218,4 @@ class TestConditionalMethods:
                     return "This should not be used as well"
 
         # Check that the error message mentions the condition issue
-        assert (
-            "Error calling __set_name__ on 'Selector' instance 'method1' in 'AllFalseMethods'"
-            in str(excinfo.value)
-        )
+        assert "Error calling __set_name__ on '_TypeErrorRaiser'" in str(excinfo.value)

@@ -1,118 +1,112 @@
-from functools import wraps
-from weakref import WeakValueDictionary
+from ._logger import logger
 
-UNDEFINED = object()
-
-
-def immediately_invoke(f):
-    return f()
-
-
-@immediately_invoke
-def _get_selector_class():
-    _cache = WeakValueDictionary()
-
-    def _get_selector_class_impl(func_name: str):
-        if func_name in _cache:
-            return _cache[func_name]
-
-        class Selector:
-            __slots__ = ("conditions", "func")
-            _instance = UNDEFINED
-            conditions: list
-
-            def __new__(cls, _func, _condition):
-                if cls._instance is UNDEFINED:
-                    inst = object.__new__(cls)
-                    inst.conditions = []
-                    # so that for each (Type, Method), there is only one descriptor instance handling it
-                    cls._instance = inst
-                return cls._instance
-
-            def __set_name__(self, owner, name):
-                if not any(self.conditions):
-                    raise ValueError(
-                        f"At least one condition must be True for the `@conditional_method` decorator decorated on method: `.{name}(..)` for the class `{owner.__name__}`; the conditions are: `{self.conditions}`"
-                    )
-                setattr(owner, name, self.func)
-
-            def __init__(self, func, condition):
-                self.conditions.append(condition)
-
-                # TODO: uncomment this if want to raise an error if more than one condition is True
-                # if (sum(self.conditions) > 1):
-                #     err_msg = f"Only one condition can be True for the `@conditional_method` decorator decorated on method: `{func.__qualname__}(..)`;"
-                #     raise ValueError(err_msg)
-
-                if condition and not hasattr(self, "func"):
-                    self.func = func
-
-            def __get__(self, inst, owner):
-                if hasattr(self, "func"):
-                    return self.func
-                return self
-
-        _cache[func_name] = Selector
-
-        return Selector
-
-    return _get_selector_class_impl
-
-
-def _get_dunder_get_of_f(f):
-    if hasattr(f, "__get__"):
-        return _get_dunder_get_of_f(f.__get__)
-    return f
-
-
-def conditional_method(func=None, *, condition=None):
-    err_msg = ""
-    if func is None and condition is None:
-        err_msg += "`@conditional_method` must used with one keyword argument named `condition` and/or it must be used as a decorator;\n"
-        raise ValueError(err_msg)
-    if func is None:
-        return lambda func: conditional_method(func, condition=condition)
-    if condition is None:
-        err_msg += "`condition` must be specified as either a callable or a boolean;\n"
-    if not callable(condition) and not isinstance(condition, bool):
-        err_msg += "`condition` must be specified as either a callable or a boolean;\n"
-    if err_msg:
-        raise ValueError(err_msg)
-
-    if callable(condition):
-        try:
-            condition = condition()
-        except TypeError as err:
-            err_msg += f"Error occurred while trying to call the callable `condition`: {condition};\nThe callable must have any parameters;\n"
-            err_msg += str(err)
-            raise ValueError(err_msg)
-
-    func_name = _get_func_name(func)
-
-    dispatcher_class = _get_selector_class(func_name=func_name)
-
-    descriptor_inst = dispatcher_class(func, condition)
-
-    try:
-        wraps(func)(descriptor_inst)
-    except AttributeError:
-        pass
-    return descriptor_inst
-
-
-def _get_func_name(func):
-    if hasattr(func, "__qualname__"):
-        return func.__qualname__
-    if hasattr(func, "__name__"):
-        return func.__name__
-    if hasattr(func, "__wrapped__"):
-        return _get_func_name(func.__wrapped__)
-    if hasattr(func, "__func__"):
-        return _get_func_name(func.__func__)
-    if hasattr(func, "fget"):
-        return _get_func_name(func.fget)
-    if hasattr(func, "__get__"):
-        return _get_func_name(func.__get__)
-    raise ValueError(
-        f"`func` = {func} must have a `__qualname__` or `__name__` attribute"
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from typing import (
+        Callable,
+        TypeVar,
     )
+
+    T = TypeVar("T", bound=Callable)
+
+
+def _raise_exec():
+    _inst = None
+
+    def _raise_exec_impl(*_args, **_kwargs):
+        nonlocal _inst
+
+        if _inst is None:
+
+            class _TypeErrorRaiser:
+                __slots__ = ("f_qualnames",)
+
+                def __init__(self):
+                    self._raise_typeerror()
+
+                def _raise_typeerror(self):
+                    nonlocal _inst
+                    _inst = None
+
+                    f_qualnames = ", ".join(self.f_qualnames)
+                    cm._cache.clear()
+                    raise TypeError(
+                        f"None of the conditions is true for `{f_qualnames}`"
+                    )
+
+                def __call__(self, *_args, **_kwargs):
+                    self._raise_typeerror()
+
+                def __set_name__(self, _owner, _name):
+                    logger.debug(f"__set_name__: {_owner} {_name}")
+                    logger.debug(f"_owner.__dict__: {_owner.__dict__}")
+                    self._raise_typeerror()
+
+            _inst = object.__new__(_TypeErrorRaiser)
+            _inst.f_qualnames = set()
+        return _inst
+
+    return _raise_exec_impl()
+
+
+def _get_func_name(f: "Callable") -> str:
+    for attr in ("__qualname__", "__name__", ""):
+        if hasattr(f, attr):
+            return f.__module__ + "." + getattr(f, attr)
+    for attr in ("__wrapped__", "__func__", "fget"):
+        if hasattr(f, attr):
+            return _get_func_name(getattr(f, attr))
+    raise TypeError("Cannot get function name")
+
+
+def _cm_impl():
+    _cache = {}
+
+    def cm(
+        f=None,
+        /,
+        condition=None,
+    ):
+        if condition is None:
+            raise TypeError(
+                "`@conditional_method` must be used as a decorator and `condition` must be specified as an instance of type `bool`"
+            )
+
+        def cm_inner(f):
+            nonlocal _cache
+
+            f_qualname = _get_func_name(f)
+            logger.debug(f"f_qualname: {f_qualname} in cm_inner")
+
+            if callable(condition):
+                try:
+                    cond = condition(f)
+                except TypeError as e:
+                    raise TypeError(
+                        f"Error calling `condition` for `{f_qualname}`: {e}"
+                    ) from e
+            else:
+                cond = bool(condition)
+
+            if f_qualname in _cache:
+                return _cache.get(f_qualname)
+
+            if cond:
+                _cache[f_qualname] = f
+                logger.debug(f"_cache: {_cache}")
+                logger.debug(
+                    f"f_qualname: {f_qualname} is in _cache and cond is true and f is {f} and returning f"
+                )
+                return f
+
+            inst = _raise_exec()
+            inst.f_qualnames.add(f_qualname)
+            return inst
+
+        return cm_inner
+
+    cm._cache = _cache
+    return cm
+
+
+conditional_method = if_ = cm = _cm_impl()
