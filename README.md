@@ -108,6 +108,8 @@ print(worker.work(1, 2, 3, a=4, b=5))
 
 ### Desugaring
 
+The codes below:
+
 ```python
 import os
 from conditional_method import conditional_method
@@ -132,7 +134,7 @@ class DatabaseConnector:
         # Default connection logic
 ```
 
-Basically desugars to:
+... basically desugars to:
 
 ```python
 import os
@@ -158,7 +160,7 @@ class DatabaseConnector:
             # Default connection logic
 ```
 
-### It can be applied to global functions
+### `@cfg` can also be applied to global functions
 
 ```python
 import os
@@ -175,7 +177,7 @@ def connect_to_db():
     print("Connecting to development database...")
 ```
 
-### Can also be applied to classes
+### `@cfg` can also be applied to classes
 
 ```python
 import os
@@ -295,16 +297,17 @@ set __conditional_method_debug__=true
 
 ## 📝 Technical Details
 
-The `conditional_method` decorator uses Python's descriptor protocol to manage method selection at runtime. When a class is defined:
+The `conditional_method` decorator uses Python's descriptor protocol to manage method selection at runtime.
 
-1. Each method decorated with `@conditional_method` is evaluated
-2. Only one implementation (where condition is `True`) is bound to the class
-3. If no conditions are `True`, an error is raised
-4. If multiple conditions are `True`, the **LAST** one encountered that is true is used
-5. Uses function qualnames to track different implementations of the same method
-6. Handles edge cases around method binding, descriptors, and garbage collection
-7. Clears the cache strategically to prevent memory leaks
-8. Supports both boolean conditions and callable conditions that evaluate at runtime
+1. Each method / global function / class decorated with `@conditional_method` is evaluated immediately by the decorator
+2. Only one method implementation (where condition is `True`) is bound to the class
+3. The class or global function can be treated as non-existent if the condition evaluates to `False` because the resultant class or function raises an exception on an attempt to create an instance of such class or to call the function.
+4. If no conditions are `True`, an error is raised
+5. If multiple conditions are `True`, the **LAST** one encountered that is true is used
+6. Uses function qualnames to track different implementations of the same method
+7. Handles edge cases around method binding, descriptors, and garbage collection
+8. Clears the cache strategically to prevent memory leaks
+9. Supports both boolean conditions and callable conditions that evaluate at runtime
 
 ## 🤝 Contributing
 
