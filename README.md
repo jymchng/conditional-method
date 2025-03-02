@@ -229,6 +229,57 @@ if __name__ == "__main__":
 
 Note!! But maybe it is easier to place `@conditional_method` decorator on the `def __init__(...)` constructor instead.
 
+# `@cfg_attr` Decorator Usage
+
+## Conditionally Apply Decorators
+
+The `@cfg_attr` decorator enables conditional decorator(s) application based on configuration, environment variables, or any boolean condition. This powerful tool helps you write cleaner, more maintainable code by removing runtime conditionals and applying decorators selectively.
+
+### Basic Usage
+
+```python
+@cfg_attr(condition=<boolean_expression>, decorators=[<decorator1>, <decorator2>, ...])
+def my_function():
+    # Decorators are applied in order when specified only when the `condition` is `True`
+```
+
+### Key Features
+
+- **Conditional Decoration**: Apply decorators only when needed
+- **Clean Code**: Avoid cluttering your code with if/else branches
+
+### Examples
+
+#### Feature Flags with Multiple Decorators
+
+Enable features conditionally and apply multiple decorators in one step:
+
+```python
+os.environ["FEATURE_FLAG"] = "enabled"  # Control with environment variables
+
+@cfg_attr(
+    condition=os.environ.get("FEATURE_FLAG") == "enabled",
+    decorators=[log_calls, cache_result]  # Apply both logging and caching
+)
+def experimental_feature(input_value):
+    print("Running experimental feature")
+    return f"Processed: {input_value}"
+```
+
+When the feature flag is enabled, both decorators are applied - logging function calls and caching results for better performance:
+
+```
+# First call - logged and cached
+Calling experimental_feature with ('test_input',), {}
+Running experimental feature
+Function experimental_feature returned Processed: test_input
+Result: Processed: test_input
+
+# Second call - retrieves from cache
+Result: Processed: test_input
+```
+
+Without changing your implementation, you can toggle features on and off or change how they're decorated simply by updating environment variables or other configuration.
 
 ## 🔍 Debugging
 
