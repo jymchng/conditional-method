@@ -17,7 +17,13 @@ def test_imports_fn(ENV_value):
 
 
 def test_imports_fn_two(ENV_value):
-    from .imports_fn_two import env
+    from .imports_fn import Person as PersonOne, env as env_one
+    from .imports_fn_two import Person as PersonTwo, env as env_two
+
+    assert env_one() == "LOCAL"
 
     with pytest.raises(TypeError):
-        assert env() == "LOCAL"
+        assert env_two() == "LOCAL"
+
+    assert PersonOne().hello() == "Person::hello One"
+    assert PersonTwo().hello() == "Person::hello Two"

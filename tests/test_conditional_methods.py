@@ -53,12 +53,12 @@ class TestConditionalMethods:
                 return "Instance of A " + "A::Tuesday"
 
         # Test class method implementation
-        result = A.monday(A())
-        assert result == "Instance of A A::Monday"
+        result = A.monday()
+        assert result == "Staticmethod of AA::Yet Another Good Monday"
 
         # Verify it's the same when called on an instance
         instance_result = A().monday()
-        assert instance_result == "Instance of A A::Monday"
+        assert instance_result == "Staticmethod of AA::Yet Another Good Monday"
 
         # Test the undecorated method
         assert A().tuesday() == "Instance of A " + "A::Tuesday"

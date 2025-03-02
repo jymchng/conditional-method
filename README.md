@@ -42,9 +42,9 @@ A powerful Python library that enables conditional method implementation based o
 pip install conditional-method
 ```
 
-## 🔧 Usage
+## 🔧 Usage of `@conditional_method` decorator (aliases: `@if_`, `@cfg`, `@cm`)
 
-A decorator `@conditional_method` that selects a method implementation (among those that are identically named) for a class during class build time, leaving only the selected method in its attributes set when the class is built, i.e. 'well-formed'.
+A decorator `@conditional_method` (aliases: `@if_`, `@cfg`, `@cm`) that selects a method implementation (among those that are identically named) for a class during class build time, leaving only the selected method in its attributes set when the class is built, i.e. 'well-formed'.
 
 ### Basic Example
 
@@ -106,85 +106,129 @@ print(worker.work(1, 2, 3, a=4, b=5))
 
 ```
 
-### Dynamic Conditions
+### Desugaring
 
 ```python
 import os
 from conditional_method import conditional_method
 
 class DatabaseConnector:
-    @conditional_method(condition=lambda: os.environ.get("ENV") == "production")
+    @conditional_method(condition=lambda f: os.environ.get("ENV") == "production")
     def connect(self, config):
         """Used in production environment"""
         print("Connecting to production database...")
         # Production-specific connection logic
         
-    @conditional_method(condition=lambda: os.environ.get("ENV") == "development")
+    @conditional_method(condition=lambda f: os.environ.get("ENV") == "development")
     def connect(self, config):
         """Used in development environment"""
         print("Connecting to development database...")
         # Development-specific connection logic
         
-    @conditional_method(condition=lambda: os.environ.get("ENV") not in ["production", "development"])
+    @conditional_method(condition=lambda f: os.environ.get("ENV") not in ["production", "development"])
     def connect(self, config):
         """Used in any other environment"""
         print("Connecting to local/test database...")
         # Default connection logic
 ```
 
-### Feature Flags
+Basically desugars to:
 
 ```python
+import os
 from conditional_method import conditional_method
 
-# Feature flag system
-FEATURES = {
-    "new_algorithm": True,
-    "legacy_mode": False
-}
-
-class DataProcessor:
-    @conditional_method(condition=lambda: FEATURES["new_algorithm"])
-    def process_data(self, data):
-        """New algorithm implementation"""
-        print("Processing with new algorithm...")
-        # New algorithm implementation
-        
-    @conditional_method(condition=lambda: FEATURES["legacy_mode"])
-    def process_data(self, data):
-        """Legacy implementation"""
-        print("Processing with legacy algorithm...")
-        # Legacy algorithm implementation
-        
-    @conditional_method(condition=lambda: not FEATURES["new_algorithm"] and not FEATURES["legacy_mode"])
-    def process_data(self, data):
-        """Default implementation"""
-        print("Processing with standard algorithm...")
-        # Standard algorithm implementation
+class DatabaseConnector:
+    if os.environ.get("ENV") == "production":
+        def connect(self, config):
+            """Used in production environment"""
+            print("Connecting to production database...")
+            # Production-specific connection logic
+    
+    elif os.environ.get("ENV") == "development":
+        def connect(self, config):
+            """Used in development environment"""
+            print("Connecting to development database...")
+            # Development-specific connection logic
+    
+    else:
+        def connect(self, config):
+            """Used in any other environment"""
+            print("Connecting to local/test database...")
+            # Default connection logic
 ```
 
-### Platform-Specific Code
+### It can be applied to global functions
 
 ```python
-import sys
+import os
 from conditional_method import conditional_method
 
-class FileSystem:
-    @conditional_method(condition=lambda: sys.platform.startswith("win"))
-    def get_temp_directory(self):
-        """Windows implementation"""
-        return "C:\\Temp"
-        
-    @conditional_method(condition=lambda: sys.platform.startswith("linux"))
-    def get_temp_directory(self):
-        """Linux implementation"""
-        return "/tmp"
-        
-    @conditional_method(condition=lambda: sys.platform == "darwin")
-    def get_temp_directory(self):
-        """macOS implementation"""
-        return "/private/tmp"
+@conditional_method(condition=os.environ.get("ENV") == "production")
+def connect_to_db():
+    # Production implementation
+    print("Connecting to production database...")
+
+@conditional_method(condition=os.environ.get("ENV") == "development")
+def connect_to_db():
+    # Development implementation
+    print("Connecting to development database...")
 ```
+
+### Can also be applied to classes
+
+```python
+import os
+from conditional_method import conditional_method
+
+# Set environment for demonstration
+os.environ["ENV"] = "production"
+
+@conditional_method(condition=os.environ.get("ENV") == "production")
+class DatabaseConnector:
+    """Production database connector with advanced security features"""
+    
+    def __init__(self, host, port, user, password):
+        self.host = host
+        self.port = port
+        self.user = user
+        self.password = password
+        print("Initializing PRODUCTION database connector")
+        
+    def connect(self):
+        print(f"Connecting to PRODUCTION database at {self.host}:{self.port}")
+        print("Using enhanced security protocols")
+        # Production-specific connection logic
+
+@conditional_method(condition=os.environ.get("ENV") == "development")
+class DatabaseConnector:
+    """Development database connector with debugging capabilities"""
+    
+    def __init__(self, host="localhost", port=5432, user="dev", password="dev"):
+        self.host = host
+        self.port = port
+        self.user = user
+        self.password = password
+        print("Initializing DEVELOPMENT database connector")
+        
+    def connect(self):
+        print(f"Connecting to DEVELOPMENT database at {self.host}:{self.port}")
+        print("Debug mode enabled")
+        # Development-specific connection logic with debug features
+
+# Usage
+if __name__ == "__main__":
+    # Since ENV=production, this will use the production version
+    db = DatabaseConnector("prod-db.example.com", 5432, "app_user", "secure_pwd")
+    db.connect()
+    
+    # If we changed ENV to development before importing:
+    # db = DatabaseConnector()  # Default parameters would work
+    # db.connect()  # Would show debugging output
+```
+
+Note!! But maybe it is easier to place `@conditional_method` decorator on the `def __init__(...)` constructor instead.
+
 
 ## 🔍 Debugging
 
@@ -205,7 +249,11 @@ The `conditional_method` decorator uses Python's descriptor protocol to manage m
 1. Each method decorated with `@conditional_method` is evaluated
 2. Only one implementation (where condition is `True`) is bound to the class
 3. If no conditions are `True`, an error is raised
-4. If multiple conditions are `True`, the first one encountered is used
+4. If multiple conditions are `True`, the **LAST** one encountered that is true is used
+5. Uses function qualnames to track different implementations of the same method
+6. Handles edge cases around method binding, descriptors, and garbage collection
+7. Clears the cache strategically to prevent memory leaks
+8. Supports both boolean conditions and callable conditions that evaluate at runtime
 
 ## 🤝 Contributing
 

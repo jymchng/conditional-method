@@ -49,13 +49,13 @@ def test_conditional_method_with_debug_env_var_normal_class(debug_env_var_value)
         def tuesday(self, one_or_two: int):
             return f"Tuesday::Four {one_or_two}"
 
-    assert DoSomeWorkClass().monday(1) == "Monday::One 1"
-    assert DoSomeWorkClass().monday(1) != "Monday::One 69"
+    assert DoSomeWorkClass().monday(1) == "Monday::Two 1"
+    assert DoSomeWorkClass().monday(1) != "Monday::Two 69"
     assert DoSomeWorkClass().tuesday(1) == "Tuesday::Four 1"
     assert DoSomeWorkClass().tuesday(69) == "Tuesday::Four 69"
 
-    assert DoSomeWorkClass.monday(DoSomeWorkClass(), 1) == "Monday::One 1"
-    assert DoSomeWorkClass.monday(DoSomeWorkClass(), 1) != "Monday::One 69"
+    assert DoSomeWorkClass.monday(DoSomeWorkClass(), 1) == "Monday::Two 1"
+    assert DoSomeWorkClass.monday(DoSomeWorkClass(), 1) != "Monday::Two 69"
     assert DoSomeWorkClass.tuesday(DoSomeWorkClass(), 1) == "Tuesday::Four 1"
     assert DoSomeWorkClass.tuesday(DoSomeWorkClass(), 69) == "Tuesday::Four 69"
 
@@ -98,8 +98,8 @@ def test_conditional_method_with_debug_env_var_normal_class_with_classmethod(
         def tuesday(cls, one_or_two: int):
             return f"Tuesday::Three {one_or_two}"
 
-    assert DoSomeWorkClass.monday(1) == "Monday::One 1"
-    assert DoSomeWorkClass.monday(1) != "Monday::One 69"
+    assert DoSomeWorkClass.monday(1) == "Monday::Two 1"
+    assert DoSomeWorkClass.monday(1) != "Monday::Two 69"
     assert DoSomeWorkClass.tuesday(1) == "Tuesday::Three 1"
     assert DoSomeWorkClass.tuesday(69) == "Tuesday::Three 69"
 
@@ -149,13 +149,13 @@ def test_conditional_method_with_debug_env_var_normal_class_with_staticmethod(
         def tuesday(one_or_two: int):
             return f"Tuesday::Four {one_or_two}"
 
-    assert DoSomeWorkClass.monday(1) == "Monday::One 1"
-    assert DoSomeWorkClass.monday(1) != "Monday::One 69"
+    assert DoSomeWorkClass.monday(1) == "Monday::Two 1"
+    assert DoSomeWorkClass.monday(1) != "Monday::Two 69"
     assert DoSomeWorkClass.tuesday(1) == "Tuesday::Four 1"
     assert DoSomeWorkClass.tuesday(69) == "Tuesday::Four 69"
 
-    assert DoSomeWorkClass().monday(1) == "Monday::One 1"
-    assert DoSomeWorkClass().monday(1) != "Monday::One 69"
+    assert DoSomeWorkClass().monday(1) == "Monday::Two 1"
+    assert DoSomeWorkClass().monday(1) != "Monday::Two 69"
     assert DoSomeWorkClass().tuesday(1) == "Tuesday::Four 1"
     assert DoSomeWorkClass().tuesday(69) == "Tuesday::Four 69"
 
@@ -201,8 +201,8 @@ def test_conditional_method_with_debug_env_var_normal_class_with_property(
         def tuesday(self):
             return "Tuesday::Three"
 
-    assert DoSomeWorkClass().monday == "Monday::One"
-    assert DoSomeWorkClass().monday != "Monday::Two"
+    assert DoSomeWorkClass().monday == "Monday::Two"
+    assert DoSomeWorkClass().monday != "Monday::One"
     assert DoSomeWorkClass().tuesday == "Tuesday::Two"
     assert DoSomeWorkClass().tuesday != "Tuesday::Three"
 

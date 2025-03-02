@@ -4,15 +4,20 @@ TYPE_CHECKING = False
 if TYPE_CHECKING:
     from typing import (
         Callable,
+        Optional,
         TypeVar,
         Union,
-        Optional,
+        overload,
+        TypeVar,
+        Sequence,
+        Tuple,
     )
 
     T = TypeVar("T", bound=Callable)
+    F = TypeVar("F", bound=Callable)
 
 
-def _raise_exec():
+def _raise_exec(qualname: str = ""):
     _inst = None
 
     def _raise_exec_impl(*_args, **_kwargs):
@@ -21,7 +26,13 @@ def _raise_exec():
         if _inst is None:
 
             class _TypeErrorRaiser:
-                __slots__ = ("f_qualnames",)
+                __slots__ = ("f_qualnames", "__qualname__")
+                __qualname__ = qualname
+
+                def __new__(cls):
+                    inst = object.__new__(cls)
+                    cm._cache.clear()
+                    return inst
 
                 def __init__(self):
                     self._raise_typeerror()
@@ -30,14 +41,14 @@ def _raise_exec():
                     nonlocal _inst
                     _inst = None
 
-                    f_qualnames = ", ".join(self.f_qualnames)
                     cm._cache.clear()
+                    f_qualnames = ", ".join(self.f_qualnames)
                     raise TypeError(
-                        f"None of the conditions is true for `{f_qualnames}`"
+                        f"None of the conditions is true for `{f_qualnames or _TypeErrorRaiser.__qualname__}`"
                     )
 
                 def __del__(self):
-                    print("__del__ is called")
+                    logger.debug("__del__ is called")
                     nonlocal _inst
                     _inst = None
                     cm._cache.clear()
@@ -50,7 +61,7 @@ def _raise_exec():
                     logger.debug(f"_owner.__dict__: {_owner.__dict__}")
                     self._raise_typeerror()
 
-            _inst = object.__new__(_TypeErrorRaiser)
+            _inst = _TypeErrorRaiser.__new__(_TypeErrorRaiser)
             _inst.f_qualnames = set()
         return _inst
 
@@ -114,4 +125,85 @@ def _cm_impl():
     return cm
 
 
-conditional_method = if_ = cm = _cm_impl()
+cfg = conditional_method = if_ = cm = _cm_impl()
+
+
+if TYPE_CHECKING:
+
+    @overload
+    def cfg_attr(
+        f: F,
+        /,
+        condition: Optional[bool] = None,
+        decorators: Sequence[Callable[[F], F]] = (),
+    ) -> Union[F, Callable[..., None]]: ...
+
+    @overload
+    def cfg_attr(
+        f: None = None,
+        /,
+        condition: Optional[bool] = None,
+        decorators: Tuple[Callable[[F], F], ...] = (),
+    ) -> Callable[[F], Union[F, Callable[..., F]]]: ...
+
+    @overload
+    def cfg_attr(
+        f: None = None,
+        /,
+        condition: Optional[bool] = None,
+        decorators: Tuple[Callable[[F], F], ...] = (),
+    ) -> Callable[[F], Union[F, Callable[..., F]]]: ...
+
+
+def cfg_attr(
+    f: "Optional[F]" = None,
+    /,
+    condition: "Optional[bool]" = None,
+    decorators: "Sequence[Callable[[F], F]]" = (),
+) -> "Union[F, Callable[..., None], Callable[[F], Union[F, Callable[..., None]]]]":
+    """
+    Conditionally apply a chain of decorators to a function.
+
+    This decorator allows for conditional application of one or more decorator functions
+    to a target function. If the condition is True, the chain of decorators is applied.
+    If the condition is False, the function is returned unchanged.
+
+    Args:
+        f: The function to be decorated. If None, returns a decorator that can be applied to a function.
+        condition: Boolean condition determining whether the decorators should be applied.
+                  Required when f is None.
+        decorators: A sequence of decorator functions to apply to f if condition is True.
+                   Decorators are applied in the order provided.
+
+    Returns:
+        If condition is True: The decorated function after applying all decorators.
+        If condition is False: The function is returned unchanged.
+        If f is None: A decorator function that can be applied to another function.
+
+    Raises:
+        ValueError: If condition is None when creating a decorator (f is None).
+
+    Examples:
+        ```python
+        # Apply decorators only when condition is True
+        @cfg_attr(condition=True, decorators=[my_decorator])
+        def my_function():
+            pass
+        ```
+    """
+    if f is None:
+        # if condition is not provided, raise an error because we need a condition to create a decorator
+        if condition is None:
+            raise ValueError(
+                "condition is required and must be a bool or a callable that takes the decorated function and returns a bool"
+            )
+        # return a decorator that can be applied to a function
+        return lambda f: cfg_attr(f, condition=condition, decorators=decorators)
+
+    if f is not None and condition:
+        from functools import reduce
+
+        # apply all decorators to the function
+        return reduce(lambda f, arg: arg(f), decorators, f)
+
+    return f  # without applying any decorators

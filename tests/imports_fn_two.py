@@ -1,4 +1,4 @@
-from conditional_method import if_
+from conditional_method import if_, cm
 import os
 
 os.environ["ENV"] = "LOCAL"
@@ -20,3 +20,15 @@ def env():
 @if_(condition=ENV == "PREPRODUCTION")
 def env():
     return "PREPRODUCTION"
+
+
+@cm(condition=False)
+class Person:
+    def hello(self):
+        return "Person::hello One"
+
+
+@cm(condition=True)
+class Person:
+    def hello(self):
+        return "Person::hello Two"

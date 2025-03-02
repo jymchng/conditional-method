@@ -1,5 +1,4 @@
 from conditional_method import cm
-from conditional_method.lib import _raise_exec
 
 
 class A:
@@ -75,6 +74,7 @@ b = B()
 b.hello = 69
 b.hello
 b.bye()
+print("cm._cache: ", cm._cache)
 
 
 @cm(condition=False)
@@ -90,26 +90,3 @@ class Person:
 
 
 Person().hello()
-
-
-def cfg_attr(f=None, /, condition=None, decorators=()):
-    if f is None:
-        if condition is None:
-            raise ValueError(
-                "condition is required and must be a bool or a callable that takes the decorated function and returns a bool"
-            )
-        return lambda f: cfg_attr(f, condition=condition, decorators=decorators)
-    if f is not None and condition:
-        from functools import reduce
-
-        return reduce(lambda f, arg: arg(f), decorators, f)
-    return _raise_exec()
-
-
-@cfg_attr(condition=False, decorators=[lambda f: f, lambda f: f])
-def hey():
-    print("::hey One")
-
-
-hey()
-print("cm._cache: ", cm._cache)
