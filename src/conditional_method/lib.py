@@ -31,6 +31,7 @@ def _raise_exec(qualname: str = ""):
 
                 def __new__(cls):
                     inst = object.__new__(cls)
+                    inst.__qualname__ = qualname
                     cm._cache.clear()
                     return inst
 
@@ -114,7 +115,7 @@ def _cm_impl():
             if f_qualname in _cache:
                 return _cache[f_qualname]
 
-            inst = _raise_exec()
+            inst = _raise_exec(f_qualname)
             inst.f_qualnames.add(f_qualname)
 
             return inst
