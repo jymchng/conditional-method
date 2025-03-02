@@ -62,12 +62,12 @@ class TestDebugMode:
                 del sys.modules["conditional_method._logger"]
 
             # Force reload with new environment
-            import src.conditional_method._logger
+            import conditional_method._logger
 
-            importlib.reload(src.conditional_method._logger)
+            importlib.reload(conditional_method._logger)
 
             # Trigger log message
-            from src.conditional_method._logger import logger
+            from conditional_method._logger import logger
 
             logger.debug("This is a test debug message")
 
@@ -103,12 +103,12 @@ class TestDebugMode:
                 del sys.modules["conditional_method._logger"]
 
             # Force reload with new environment
-            import src.conditional_method._logger
+            import conditional_method._logger
 
-            importlib.reload(src.conditional_method._logger)
+            importlib.reload(conditional_method._logger)
 
             # Trigger log message
-            from src.conditional_method._logger import logger
+            from conditional_method._logger import logger
 
             # Clear capture buffer
             configure_logging.truncate(0)
@@ -132,7 +132,7 @@ class TestDebugMode:
 
     def test_debug_mode_in_conditional_methods(self, configure_logging):
         """Test that debug logs appear when using conditional methods"""
-        from src.conditional_method.lib import conditional_method
+        from conditional_method import conditional_method
 
         # Store original value
         original_value = os.environ.get("__conditional_method_debug__", None)
@@ -145,11 +145,11 @@ class TestDebugMode:
             import importlib
 
             # Clear any existing imports related to logger
-            if "src.conditional_method._logger" in sys.modules:
-                del sys.modules["src.conditional_method._logger"]
+            if "conditional_method._logger" in sys.modules:
+                del sys.modules["conditional_method._logger"]
 
             # Force reload with new environment
-            import src.conditional_method._logger as logger
+            import conditional_method._logger as logger
 
             importlib.reload(logger)
 

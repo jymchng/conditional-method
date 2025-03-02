@@ -23,7 +23,7 @@ def immediately_invoke(f: "Callable[[], 'T']") -> "T":
 
 
 @immediately_invoke
-def logger():
+def logger() -> "Logger":
     import os
 
     # Print debug information to help diagnose the issue

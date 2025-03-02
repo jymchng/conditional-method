@@ -3,7 +3,7 @@ import logging
 from unittest.mock import patch, MagicMock
 
 # Direct import to test the logger itself
-from src.conditional_method._logger import (
+from conditional_method._logger import (
     ENV_KEY_TO_ACTIVATE_DEBUG_LOGGER,
 )
 
@@ -21,12 +21,12 @@ class TestLogger:
 
             # Re-import to get fresh instance with clean environment
             import importlib
-            import src.conditional_method._logger
+            import conditional_method._logger
 
-            importlib.reload(src.conditional_method._logger)
+            importlib.reload(conditional_method._logger)
 
             # Check if the logger is a NoopLogger
-            from src.conditional_method._logger import logger
+            from conditional_method._logger import logger
 
             assert not logger  # NoopLogger should return False in bool context
 
@@ -54,12 +54,12 @@ class TestLogger:
 
             # Re-import to get fresh instance with the environment variable set
             import importlib
-            import src.conditional_method._logger
+            import conditional_method._logger
 
-            importlib.reload(src.conditional_method._logger)
+            importlib.reload(conditional_method._logger)
 
             # Get logger after reload
-            from src.conditional_method._logger import logger
+            from conditional_method._logger import logger
 
             # The real logger should evaluate to True in a bool context
             assert logger
@@ -91,9 +91,9 @@ class TestLogger:
 
             # Re-import to get fresh instance with the environment variable set
             import importlib
-            import src.conditional_method._logger
+            import conditional_method._logger
 
-            importlib.reload(src.conditional_method._logger)
+            importlib.reload(conditional_method._logger)
 
             # Verify getLogger was called with correct name
             mock_get_logger.assert_called_once_with("conditional_method")
