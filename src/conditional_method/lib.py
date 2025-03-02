@@ -11,10 +11,15 @@ if TYPE_CHECKING:
         TypeVar,
         Sequence,
         Tuple,
+        Literal,
+        NoReturn,
+        Any,
     )
 
     T = TypeVar("T", bound=Callable)
     F = TypeVar("F", bound=Callable)
+    ExceptionT = TypeVar("ExceptionT", bound=Exception)
+    RaisingT = TypeVar("RaisingT", bound=Callable[[Any], NoReturn])
 
 
 def _raise_exec(qualname: str = ""):
@@ -81,12 +86,63 @@ def _get_func_name(f: "Callable") -> str:
 
 def _cm_impl():
     _cache = {}
+    
+    if TYPE_CHECKING:
+        
+        @overload
+        def cm(f: T, /, condition: None = None) -> T: ...
+        
+        @overload
+        def cm(f: None, /, condition: Union[bool, Callable[[T], bool]]) -> Callable[[T], T]: ...
+        
+        @overload
+        def cm(f: T, /, condition: Literal[True]) -> T: ...
+        
+        @overload
+        def cm(f: T, /, condition: Literal[False]) -> RaisingT: ...
 
     def cm(
         f: "Optional[T]" = None,
         /,
         condition: "Union[bool, Callable[[T], bool], None]" = None,
     ) -> "Optional[T]":
+        """Conditionally select function implementations based on a runtime condition.
+        This decorator enables defining multiple implementations of a function with the same name,
+        where only one implementation is selected based on the provided condition. The condition
+        is evaluated when the decorator is applied, not when the function is called.
+        
+        Args:
+        
+            f: The function to decorate.
+            condition: Boolean value or callable that determines if this implementation is used.
+            If callable, it will be passed the function and should return a boolean.
+            
+        Returns:
+            The original function if condition is True, a cached implementation if available,
+            or a placeholder that raises TypeError when called.
+        Raises:
+        
+            TypeError: When used without a condition parameter.
+            
+        Example:
+        ```python
+        import pytest
+        from conditional_method import cfg
+        
+        @cfg(condition=lambda f: f.__name__.startswith("test_"))
+        def test_func():
+            return "result"
+            
+        assert test_func() == "result"
+        
+        @cfg(condition=lambda f: f.__name__.startswith("test_"))
+        def non_matching_func():
+            return "result"
+        
+        with pytest.raises(TypeError):
+            non_matching_func()
+        ```
+        """
         if condition is None:
             raise TypeError(
                 "`@conditional_method` must be used as a decorator and `condition` must be specified as an instance of type `bool`"
