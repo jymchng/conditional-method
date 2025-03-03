@@ -100,16 +100,14 @@ if TYPE_EXTENSIONS_IMPORTED and TYPE_CHECKING:
     ) -> Callable[[Callable[..., Any]], Callable[..., Any]]: ...
 
 
-# export ENVIRONMENT_KEY=staging && uv run --group examples python -m pytest examples/fastapi_auth_staging.py -s -vv
-# export ENVIRONMENT_KEY=production && uv run --group examples python -m pytest examples/fastapi_auth_prod.py -s -vv
-# export ENVIRONMENT_KEY=development && uv run --group examples python -m pytest examples/fastapi_auth_dev.py -s -vv
-# uv run --group examples python -m pytest examples/fastapi_auth.py -s -vv
-# uv run --group test python -m pytest tests -s -vv
-# uv tool run ruff format .
-# uv tool run ruff check . --fix
+import nox
+from nox.sessions import Session
+from nox import session as nox_session
+
 
 DEFAULT_SESSION_KWARGS: "NoxSessionParams" = {
-    "reuse_venv": True,
+    "reuse_venv": True, # probably want to reuse it so that you don't keep recreating it
+    # you can also pass in other kwargs to nox_session, e.g. pinning a python version
 }
 MANIFEST_FILENAME = "pyproject.toml"
 
