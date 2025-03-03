@@ -71,3 +71,24 @@ def format(session: Session):
 @nox.session
 def check(session: Session):
     session.run("uv", "tool", "run", "ruff", "check", ".")
+
+
+@nox.session
+def build(session: Session):
+    command = [
+        shutil.which("uv"),
+        "run",
+        "setup.py",
+        "build",
+    ]
+    session.run(*command)
+    # copy from ./build to ./src/conditional_method/_lib.c
+    shutil.copy(
+        "./build/lib.linux-x86_64-cpython-38/_lib.cpython-38-x86_64-linux-gnu.so",
+        "./src/conditional_method/_lib.cpython-38-x86_64-linux-gnu.so",
+    )
+
+
+@nox.session
+def benchmark(session: Session):
+    session.run("pytest", "tests/benchmark.py", "-v")
