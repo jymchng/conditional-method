@@ -86,18 +86,20 @@ def _get_func_name(f: "Callable") -> str:
 
 def _cm_impl():
     _cache = {}
-    
+
     if TYPE_CHECKING:
-        
+
         @overload
         def cm(f: T, /, condition: None = None) -> T: ...
-        
+
         @overload
-        def cm(f: None, /, condition: Union[bool, Callable[[T], bool]]) -> Callable[[T], T]: ...
-        
+        def cm(
+            f: None, /, condition: Union[bool, Callable[[T], bool]]
+        ) -> Callable[[T], T]: ...
+
         @overload
         def cm(f: T, /, condition: Literal[True]) -> T: ...
-        
+
         @overload
         def cm(f: T, /, condition: Literal[False]) -> RaisingT: ...
 
@@ -110,35 +112,35 @@ def _cm_impl():
         This decorator enables defining multiple implementations of a function with the same name,
         where only one implementation is selected based on the provided condition. The condition
         is evaluated when the decorator is applied, not when the function is called.
-        
+
         Args:
-        
+
             f: The function to decorate.
             condition: Boolean value or callable that determines if this implementation is used.
             If callable, it will be passed the function and should return a boolean.
-            
+
         Returns:
             The original function if condition is True, a cached implementation if available,
             or a placeholder that raises TypeError when called.
         Raises:
-        
+
             TypeError: When used without a condition parameter.
-            
+
         Example:
         ```python
         import pytest
         from conditional_method import cfg
-        
+
         @cfg(condition=lambda f: f.__name__.startswith("test_"))
         def test_func():
             return "result"
-            
+
         assert test_func() == "result"
-        
+
         @cfg(condition=lambda f: f.__name__.startswith("test_"))
         def non_matching_func():
             return "result"
-        
+
         with pytest.raises(TypeError):
             non_matching_func()
         ```

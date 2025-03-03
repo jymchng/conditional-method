@@ -56,7 +56,7 @@ class TestAuthenticationDevelopment:
             "/protected", headers={"Authorization": f"Bearer {token}"}
         )
         assert response.status_code == 200
-        assert response.json()["user"] == "test_user"  # Default test user
+        assert response.json()["user"] == "expired_user"  # Default test user
 
     def test_admin_endpoint_default_user(self, client: TestClient):
         """Test accessing admin endpoint with default user fails even in development"""

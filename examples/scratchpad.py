@@ -27,9 +27,6 @@ class A:
         print("A::hello True 2")
 
 
-print("cm._cache: ", cm._cache)
-
-
 class B:
     @cm(condition=True)
     @property
@@ -63,18 +60,15 @@ class B:
         print(f"B::hello.setter Two; value = {value}")
 
 
-print("cm._cache: ", cm._cache)
 A().hello()
 A().bye()
 
 print(B.__dict__)
-print("cm._cache: ", cm._cache)
 
 b = B()
 b.hello = 69
 b.hello
 b.bye()
-print("cm._cache: ", cm._cache)
 
 
 @cm(condition=False)

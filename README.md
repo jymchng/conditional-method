@@ -327,3 +327,17 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 - Thanks to all contributors who have helped shape this project
 - Inspired by the need for cleaner conditional logic in Python applications
+
+## Benchmarks
+
+| Test Name                                      | Min (ns)  | Max (ns)       | Mean (ns)  | StdDev  | Median (ns) | IQR     | Outliers   | OPS (Kops/s) | Rounds | Iterations |
+|-----------------------------------------------|----------|---------------|-----------|---------|-------------|---------|------------|-------------|--------|------------|
+| test_benchmark_cfg_c_true_condition          | 0.0000   | 678,392.1272  | 738.8588  | 2,245.6885  | 709.6678  | 221.6548 | 213;2425   | 1,353.4386  | 133285 | 1          |
+| test_benchmark_cfg_c_with_args_kwargs        | 0.0000   | 3,741,117.1943 | 1,502.8779 | 11,962.4774 | 1,382.0827 | 191.8525 | 248;3361   | 665.3900   | 112789 | 1          |
+| test_benchmark_cfg_c_with_decorators         | 0.0000   | 47,514.2151   | 719.5368  | 914.6007  | 692.9040  | 210.4789 | 345;664    | 1,389.7829  | 31796  | 1          |
+| test_benchmark_cfg_py_with_args_kwargs       | 0.0000   | 226,778.9096  | 1,468.5467 | 1,382.4278 | 1,404.4344 | 180.6766 | 1954;20336 | 680.9453   | 177010 | 1          |
+| test_benchmark_cfg_py_true_condition         | 92.6493  | 23,385.2339   | 187.2679  | 139.4808  | 179.5038  | 25.3872  | 1152;4237  | 5,339.9446  | 179196 | 27         |
+| test_benchmark_cfg_py_with_callable_condition | 114.0684 | 6,626.6395    | 161.1504  | 57.6930   | 157.8964  | 38.3705  | 1552;1508  | 6,205.3822  | 71507  | 100        |
+| test_benchmark_cfg_c_with_callable_condition | 121.4445 | 35,797.3762   | 168.6776  | 166.4065  | 163.3354  | 33.1178  | 1098;1331  | 5,928.4679  | 59415  | 100        |
+| test_benchmark_cfg_c_false_condition         | 5,105.5104 | 90,578.5710  | 9,486.0200 | 3,841.0288 | 9,195.8791 | 681.7281 | 273;1996   | 105.4183   | 9357   | 1          |
+| test_benchmark_cfg_py_false_condition        | 6,418.6752 | 367,475.6736 | 10,278.9051 | 5,473.8820 | 9,801.2388 | 3,334.1348 | 1164;1183 | 97.2866    | 20383  | 1          |

@@ -8,9 +8,12 @@ if TYPE_CHECKING:
 
 
 def _make_noop_logger() -> "Logger":
+    def closure(*_, **__):
+        pass
+
     class NoopLogger:
         def __getattribute__(self, _name: str) -> "Callable[[Any, Any], Any]":
-            return lambda *args, **kwargs: None
+            return closure
 
         def __bool__(self) -> bool:
             return False

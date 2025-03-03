@@ -21,6 +21,7 @@ dev = [
 ]
 test = [
     "pytest>=8.3.4",
+    "pytest-benchmark>=4.0.0",
 ]
 examples = [
     "fastapi>=0.115.10",
@@ -33,4 +34,5 @@ build = [
 ]
 
 [tool.ruff.lint]
+exclude = ["tests/"]
 ignore = ["F811"]

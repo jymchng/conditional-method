@@ -260,7 +260,9 @@ class TestCfgAttr:
         assert instance.test_method() == "result"
 
     def test_with_lambda_function(self):
-        func = lambda x: x * 2
+        def func(x):
+            return x * 2
+
         decorated = cfg_attr(func, condition=True, decorators=[add_prefix("lambda")])
 
         assert decorated(5) == "lambda_10"
@@ -440,7 +442,9 @@ class TestCfgAttr:
         # Only apply decorator if pytest is available
         has_pytest = True
         try:
-            import pytest
+            import importlib
+
+            importlib.util.find_spec("pytest")
         except ImportError:
             has_pytest = False
 
