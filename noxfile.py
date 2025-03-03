@@ -100,11 +100,6 @@ if TYPE_EXTENSIONS_IMPORTED and TYPE_CHECKING:
     ) -> Callable[[Callable[..., Any]], Callable[..., Any]]: ...
 
 
-import nox
-from nox.sessions import Session
-from nox import session as nox_session
-
-
 DEFAULT_SESSION_KWARGS: "NoxSessionParams" = {
     "reuse_venv": True, # probably want to reuse it so that you don't keep recreating it
     # you can also pass in other kwargs to nox_session, e.g. pinning a python version
