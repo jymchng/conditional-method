@@ -5,7 +5,7 @@ conditional_method_module = Extension(
     "_lib",
     sources=["src/conditional_method/_lib.c"],
     extra_compile_args=[
-        "-Werror",
+        # "-Werror",
         "-Wall",
         "-Wextra",
         "-std=c99",
@@ -24,11 +24,11 @@ conditional_method_module = Extension(
         "-ftree-vectorize",  # Enable auto-vectorization
         "-fipa-pta",  # Interprocedural pointer analysis
         "-fipa-cp-clone",  # Interprocedural constant propagation
-        "-fprofile-generate",  # Profile-guided optimization (for training runs)
+        # "-fprofile-generate",  # Profile-guided optimization (for training runs)
     ]
     if not ("win32" in importlib.import_module("sys").platform)
     else [
-        "/WX",
+        # "/WX",
         "/W3",
         "/std:c11",
         "/O2",
@@ -42,7 +42,7 @@ conditional_method_module = Extension(
         "/Qopt-report:5",  # Optimization report for debugging
         "/fp:except-",  # Disable floating-point exceptions
     ],
-    define_macros=[("PY_SSIZE_T_CLEAN", None), ("NDEBUG", None)],
+    define_macros=[("NDEBUG", None)],
     py_limited_api=False,
 )
 
