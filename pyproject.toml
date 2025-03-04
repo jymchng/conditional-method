@@ -8,10 +8,19 @@ authors = [
     { name="Jim Chng", email="jimchng@outlook.com" }
 ]
 dependencies = []
+include = [
+    "conditional_method/*.pyd",
+    "conditional_method/*.so",
+    "conditional_method/*.pyi",
+    
+]
 
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling", "setuptools>=75.3.0"]
 build-backend = "hatchling.build"
+
+[tool.hatch.build.hooks.custom]
+path = "hatch_build.py"
 
 [dependency-groups]
 dev = [
@@ -30,6 +39,7 @@ examples = [
     "pyjwt>=2.9.0",
 ]
 build = [
+    "hatchling>=1.27.0",
     "setuptools>=75.3.0",
 ]
 

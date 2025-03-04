@@ -68,5 +68,5 @@ class TestAuthenticationDevelopment:
         token = create_access_token({"sub": "admin_user", "role": "admin"})
         response = client.get("/admin", headers={"Authorization": f"Bearer {token}"})
         assert response.status_code == 200
-        
+
         assert response.json()["user"] == "admin_user"

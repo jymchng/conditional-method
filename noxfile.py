@@ -188,6 +188,7 @@ def session(
 # former will run all tests (default being: `tests -s -vv`, i.e. test the entire test suite)
 # latter will run a single test, e.g. a specific test file (tests/test_cfg.py), or a specific test function, etc.
 
+
 # dependency_group is used to install the dependencies for the test session
 # default_posargs is used to pass additional arguments to the test session
 @session(dependency_group="test", default_posargs=["tests", "-s", "-vv"])
@@ -205,8 +206,8 @@ def test(session: AlteredSession):
         # override the default by appending different `-- <args>` to `nox -s test`
         # save you some time from writing different nox sessions
     ]
-    if '--build' in session.posargs:
-        session.posargs.remove('--build')
+    if "--build" in session.posargs:
+        session.posargs.remove("--build")
         with alter_session(session, dependency_group="build"):
             build(session)
     session.run(*command)
@@ -226,14 +227,14 @@ def alter_session(
     old_kwargs = {}
     for key, value in kwargs.items():
         old_kwargs[key] = getattr(session, key)
-        
+
     session.dependency_group = dependency_group
     session.environment_mapping = environment_mapping
     session.default_posargs = default_posargs
     for key, value in kwargs.items():
         setattr(session, key, value)
     yield session
-    
+
     session.dependency_group = old_dependency_group
     session.environment_mapping = old_environment_mapping
     session.default_posargs = old_default_posargs
@@ -382,3 +383,32 @@ def benchmark(session: Session):
         "-m",
         "pytest",
     )
+
+@session(dependency_group="dev")
+def list_dist_files(session: Session):
+    """List all files packaged in the latest distribution."""
+    import glob
+    import zipfile
+    from pathlib import Path
+    import os
+
+    # Find the latest wheel file in the dist directory
+    wheel_files = sorted(glob.glob("dist/*.whl"), key=os.path.getmtime, reverse=True)
+    
+    if not wheel_files:
+        session.error("No wheel files found in dist/ directory")
+        return
+    
+    latest_wheel = wheel_files[0]
+    session.log(f"Examining contents of {latest_wheel}")
+    
+    # Wheel files are zip files, so we can use zipfile to list contents
+    with zipfile.ZipFile(latest_wheel, 'r') as wheel:
+        file_list = wheel.namelist()
+        
+        # Print the files in a readable format
+        session.log(f"Contents of {Path(latest_wheel).name}:")
+        for file in sorted(file_list):
+            session.log(f"  - {file}")
+        
+        session.log(f"Total files: {len(file_list)}")
