@@ -1784,7 +1784,7 @@ def test_cfg_without_brackets_with_decorator_factory():
                 return wrapper
             return decorator
 
-    with pytest.raises(TypeError):
+    with pytest.raises(UnboundLocalError):
         decorator = decorator_factory("test")
 
     @decorator
