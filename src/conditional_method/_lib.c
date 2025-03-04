@@ -5,7 +5,7 @@
 static PyObject *_cm_wrapper(PyObject *self, PyObject *args);
 static PyObject *cfg_attr_wrapper(PyObject *self, PyObject *args);
 static PyObject *_cm_inner(PyObject *self, PyObject *args);
-static PyObject *_raise_exec(PyObject *self, PyObject *args, PyObject *kwargs);
+static PyObject *_raise_exec(PyObject *args, PyObject *kwargs);
 static PyObject *_get_func_name(PyObject *self, PyObject *func);
 static PyObject *cm(PyObject *self, PyObject *args, PyObject *kwargs);
 static PyObject *cfg_attr(PyObject *self, PyObject *args, PyObject *kwargs);
@@ -208,7 +208,7 @@ static PyTypeObject TypeErrorRaiserType = {
 };
 
 /* Function to create a new TypeErrorRaiser instance */
-static PyObject *_raise_exec(PyObject *self, PyObject *args, PyObject *kwargs) {
+static PyObject *_raise_exec(PyObject *args, PyObject *kwargs) {
   static char *kwlist[] = {"qualname", NULL};
   PyObject *qualname = NULL;
 
@@ -464,7 +464,7 @@ static PyObject *_cm_inner(PyObject *self, PyObject *args) {
   }
 
   /* If the function is not in the cache, create a TypeErrorRaiser */
-  PyObject *raiser = _raise_exec(self, Py_BuildValue("(O)", f_qualname), NULL);
+  PyObject *raiser = _raise_exec(Py_BuildValue("(O)", f_qualname), NULL);
   if (raiser == NULL) {
     Py_DECREF(f_qualname);
     return NULL;
