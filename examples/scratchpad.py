@@ -27,6 +27,7 @@ class A:
     def hello(self):
         print("A::hello True 2")
 
+
 print("_cache: ", _cache)
 
 
@@ -62,6 +63,7 @@ class B:
     def hello(self, value):
         print(f"B::hello.setter Two; value = {value}")
 
+
 print("_cache: ", _cache)
 
 A().hello()
@@ -81,6 +83,8 @@ print("_cache: ", _cache)
 class Person:
     def hello(self):
         print("Person::hello One")
+
+
 print("_cache: ", _cache)
 
 
@@ -88,6 +92,8 @@ print("_cache: ", _cache)
 class Person:
     def hello(self):
         print("Person::hello Two")
+
+
 print("_cache: ", _cache)
 
 

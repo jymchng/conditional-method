@@ -1,4 +1,5 @@
 from functools import wraps
+import contextlib
 import nox
 from nox.sessions import Session
 from nox import session as nox_session
@@ -34,6 +35,10 @@ if TYPE_CHECKING:
         pass
 
 if TYPE_EXTENSIONS_IMPORTED and TYPE_CHECKING:
+    from typing_extensions import ParamSpec
+    from nox.sessions import Func
+
+    P = ParamSpec("P")
 
     class NoxSessionParams(TypedDict):
         """Type hints for Nox session parameters.
@@ -62,7 +67,6 @@ if TYPE_EXTENSIONS_IMPORTED and TYPE_CHECKING:
         default: NotRequired[bool]
         requires: NotRequired[Optional[Sequence[str]]]
 
-    Func = Callable[..., Any]
     PythonVersion = Literal["3.8", "3.9", "3.10", "3.11", "3.12"]
 
     class ExtraSessionParams(TypedDict):
@@ -87,7 +91,7 @@ if TYPE_EXTENSIONS_IMPORTED and TYPE_CHECKING:
         environment_mapping: "Dict[str, str]" = {},
         default_posargs: "Sequence[str]" = (),
         **kwargs: NoxSessionParams,
-    ) -> Callable[..., Any]: ...
+    ) -> Callable[[], Any]: ...
 
     @overload
     def session(
@@ -101,7 +105,7 @@ if TYPE_EXTENSIONS_IMPORTED and TYPE_CHECKING:
 
 
 DEFAULT_SESSION_KWARGS: "NoxSessionParams" = {
-    "reuse_venv": True, # probably want to reuse it so that you don't keep recreating it
+    "reuse_venv": True,  # probably want to reuse it so that you don't keep recreating it
     # you can also pass in other kwargs to nox_session, e.g. pinning a python version
 }
 MANIFEST_FILENAME = "pyproject.toml"
@@ -140,9 +144,10 @@ class AlteredSession(Session):
             uv_install_group_dependencies(self, self.dependency_group)
         if self.session.posargs is not None:
             args = (*args, *(self.session.posargs or self.default_posargs))
-        if "env" in kwargs:
-            kwargs.pop("env")
-        return self.session.run(*args, env=self.environment_mapping or {}, **kwargs)
+        env: "Dict[str, str]" = kwargs.pop("env", {})
+        env.update(self.environment_mapping)
+        kwargs["env"] = env
+        return self.session.run(*args, **kwargs)
 
 
 def session(
@@ -186,7 +191,7 @@ def session(
 # dependency_group is used to install the dependencies for the test session
 # default_posargs is used to pass additional arguments to the test session
 @session(dependency_group="test", default_posargs=["tests", "-s", "-vv"])
-def test(session: Session):
+def test(session: AlteredSession):
     command = [
         shutil.which("uv"),
         "run",
@@ -195,12 +200,69 @@ def test(session: Session):
         "python",
         "-m",
         "pytest",
+        # by default will run all tests, e.g. appending `tests -s -vv` to the command
+        # but you can also run a single test file, e.g. `nox -s test -- tests/test_cfg.py -s -vv`
+        # override the default by appending different `-- <args>` to `nox -s test`
+        # save you some time from writing different nox sessions
     ]
+    if '--build' in session.posargs:
+        session.posargs.remove('--build')
+        with alter_session(session, dependency_group="build"):
+            build(session)
     session.run(*command)
 
 
+@contextlib.contextmanager
+def alter_session(
+    session: AlteredSession,
+    dependency_group: str = None,
+    environment_mapping: "Dict[str, str]" = {},
+    default_posargs: "Sequence[str]" = (),
+    **kwargs: "NoxSessionParams",
+):
+    old_dependency_group = session.dependency_group
+    old_environment_mapping = session.environment_mapping
+    old_default_posargs = session.default_posargs
+    old_kwargs = {}
+    for key, value in kwargs.items():
+        old_kwargs[key] = getattr(session, key)
+        
+    session.dependency_group = dependency_group
+    session.environment_mapping = environment_mapping
+    session.default_posargs = default_posargs
+    for key, value in kwargs.items():
+        setattr(session, key, value)
+    yield session
+    
+    session.dependency_group = old_dependency_group
+    session.environment_mapping = old_environment_mapping
+    session.default_posargs = old_default_posargs
+    for key, value in old_kwargs.items():
+        setattr(session, key, value)
+
+
 @session(
-    dependency_group="examples", default_posargs=["examples/scratchpad.py",]
+    dependency_group="examples",
+)
+def fastapi_auth(session: Session):
+    test_development(session)
+    # test the staging environment
+    # change the environment key to "staging"
+    with alter_session(session, environment_mapping={"ENVIRONMENT_KEY": "staging"}):
+        test_staging(session)
+    # test the production environment
+    # change the environment key to "production"
+    with alter_session(session, environment_mapping={"ENVIRONMENT_KEY": "production"}):
+        test_production(session)
+    # test the development environment again with the environment key set to "development"
+    test_development(session)
+
+
+@session(
+    dependency_group="examples",
+    default_posargs=[
+        "examples/scratchpad.py",
+    ],
 )
 def scratchpad(session: Session):
     command = [
@@ -262,15 +324,6 @@ def test_development(session: Session):
         "-m",
         "pytest",
     )
-
-
-@session(
-    dependency_group="examples",
-)
-def fastapi_auth(session: Session):
-    test_development(session)
-    test_staging(session)
-    test_production(session)
 
 
 @session(

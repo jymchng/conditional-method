@@ -369,6 +369,7 @@ def test_cfg_with_exception_in_condition():
         raise ValueError("Error in condition")
 
     with pytest.raises(TypeError):
+
         @cfg(condition=condition_with_error)
         def test_func():
             return "result"
@@ -1219,6 +1220,7 @@ def test_cfg_with_condition_based_on_function_name_pattern():
 
 def test_cfg_without_brackets():
     with pytest.raises(TypeError):
+
         @cfg
         def test_func():
             return "result"
@@ -1228,6 +1230,7 @@ def test_cfg_without_brackets():
 
 def test_cfg_without_brackets_with_args():
     with pytest.raises(TypeError):
+
         @cfg
         def test_func(a, b):
             return a + b
@@ -1237,6 +1240,7 @@ def test_cfg_without_brackets_with_args():
 
 def test_cfg_without_brackets_with_kwargs():
     with pytest.raises(TypeError):
+
         @cfg
         def test_func(a, b, **kwargs):
             return a + b + kwargs.get("c", 0)
@@ -1246,6 +1250,7 @@ def test_cfg_without_brackets_with_kwargs():
 
 def test_cfg_without_brackets_with_class_method():
     with pytest.raises(TypeError):
+
         class TestClass:
             @cfg
             def test_method(self):
@@ -1256,6 +1261,7 @@ def test_cfg_without_brackets_with_class_method():
 
 def test_cfg_without_brackets_with_static_method():
     with pytest.raises(TypeError):
+
         class TestClass:
             @staticmethod
             @cfg
@@ -1267,6 +1273,7 @@ def test_cfg_without_brackets_with_static_method():
 
 def test_cfg_without_brackets_with_class_method_decorator():
     with pytest.raises(TypeError):
+
         class TestClass:
             @classmethod
             @cfg
@@ -1278,6 +1285,7 @@ def test_cfg_without_brackets_with_class_method_decorator():
 
 def test_cfg_without_brackets_with_property():
     with pytest.raises(TypeError):
+
         class TestClass:
             @property
             @cfg
@@ -1289,6 +1297,7 @@ def test_cfg_without_brackets_with_property():
 
 def test_cfg_without_brackets_with_generator():
     with pytest.raises(TypeError):
+
         @cfg
         def generate_numbers(n):
             for i in range(n):
@@ -1301,6 +1310,7 @@ def test_cfg_without_brackets_with_async_function():
     import asyncio
 
     with pytest.raises(TypeError):
+
         @cfg
         async def async_func():
             await asyncio.sleep(0.01)
@@ -1312,6 +1322,7 @@ def test_cfg_without_brackets_with_async_function():
 
 def test_cfg_without_brackets_with_nested_decorators():
     with pytest.raises(TypeError):
+
         @add_prefix("prefix")
         @cfg
         def test_func():
@@ -1322,6 +1333,7 @@ def test_cfg_without_brackets_with_nested_decorators():
 
 def test_cfg_without_brackets_with_multiple_decorators():
     with pytest.raises(TypeError):
+
         @add_prefix("prefix")
         @add_suffix("suffix")
         @cfg
@@ -1335,6 +1347,7 @@ def test_cfg_without_brackets_with_lru_cache():
     calls = 0
 
     with pytest.raises(TypeError):
+
         @lru_cache(maxsize=None)
         @cfg
         def cached_func(n):
@@ -1349,6 +1362,7 @@ def test_cfg_without_brackets_with_lru_cache():
 
 def test_cfg_without_brackets_with_recursive_function():
     with pytest.raises(TypeError):
+
         @cfg
         def factorial(n):
             if n <= 1:
@@ -1360,6 +1374,7 @@ def test_cfg_without_brackets_with_recursive_function():
 
 def test_conditional_method_without_brackets():
     with pytest.raises(TypeError):
+
         @conditional_method
         def test_func():
             return "result"
@@ -1369,6 +1384,7 @@ def test_conditional_method_without_brackets():
 
 def test_if_without_brackets():
     with pytest.raises(TypeError):
+
         @if_
         def test_func():
             return "result"
@@ -1378,6 +1394,7 @@ def test_if_without_brackets():
 
 def test_cfg_with_empty_brackets():
     with pytest.raises(TypeError):
+
         @cfg()
         def test_func():
             return "result"
@@ -1387,6 +1404,7 @@ def test_cfg_with_empty_brackets():
 
 def test_conditional_method_with_empty_brackets():
     with pytest.raises(TypeError):
+
         @conditional_method()
         def test_func():
             return "result"
@@ -1396,6 +1414,7 @@ def test_conditional_method_with_empty_brackets():
 
 def test_if_with_empty_brackets():
     with pytest.raises(TypeError):
+
         @if_()
         def test_func():
             return "result"
@@ -1406,6 +1425,7 @@ def test_if_with_empty_brackets():
 def test_cfg_with_default_condition():
     # Default condition should be True
     with pytest.raises(TypeError):
+
         @cfg
         def test_func():
             return "result"
@@ -1415,6 +1435,7 @@ def test_cfg_with_default_condition():
 
 def test_cfg_without_brackets_with_docstring():
     with pytest.raises(TypeError):
+
         @cfg
         def test_func():
             """This is a test function"""
@@ -1425,6 +1446,7 @@ def test_cfg_without_brackets_with_docstring():
 
 def test_cfg_without_brackets_with_annotations():
     with pytest.raises(TypeError):
+
         @cfg
         def test_func(a: int, b: str) -> str:
             return b * a
@@ -1435,6 +1457,7 @@ def test_cfg_without_brackets_with_annotations():
 
 def test_cfg_without_brackets_with_lambda():
     with pytest.raises(TypeError):
+
         @cfg
         def test_func():
             return lambda x: x * 2
@@ -1444,10 +1467,12 @@ def test_cfg_without_brackets_with_lambda():
 
 def test_cfg_without_brackets_with_nested_functions():
     with pytest.raises(TypeError):
+
         @cfg
         def outer():
             def inner():
                 return "inner"
+
             return inner
 
         assert outer()() == "inner"
@@ -1455,6 +1480,7 @@ def test_cfg_without_brackets_with_nested_functions():
 
 def test_cfg_without_brackets_with_closure():
     with pytest.raises(TypeError):
+
         def create_func():
             x = 10
 
@@ -1469,6 +1495,7 @@ def test_cfg_without_brackets_with_closure():
 
 def test_cfg_without_brackets_with_exception():
     with pytest.raises(TypeError):
+
         @cfg
         def raises_error():
             raise ValueError("Test error")
@@ -1480,6 +1507,7 @@ def test_cfg_without_brackets_with_exception():
 def test_cfg_without_brackets_with_inheritance():
     class BaseClass:
         with pytest.raises(TypeError):
+
             @cfg
             def method(self):
                 return "base"
@@ -1488,19 +1516,20 @@ def test_cfg_without_brackets_with_inheritance():
         pass
 
     with pytest.raises(AttributeError):
-
         assert DerivedClass().method() == "base"
 
 
 def test_cfg_without_brackets_with_method_override():
     class BaseClass:
         with pytest.raises(TypeError):
+
             @cfg
             def method(self):
                 return "base"
 
     class DerivedClass(BaseClass):
         with pytest.raises(TypeError):
+
             @cfg
             def method(self):
                 return "derived"
@@ -1512,12 +1541,14 @@ def test_cfg_without_brackets_with_method_override():
 def test_cfg_without_brackets_with_super_call():
     class Parent:
         with pytest.raises(TypeError):
+
             @cfg
             def method(self):
                 return "parent"
 
     class Child(Parent):
         with pytest.raises(TypeError):
+
             @cfg
             def method(self):
                 return f"child_{super().method()}"
@@ -1531,6 +1562,7 @@ def test_cfg_without_brackets_with_abstract_method():
 
     class AbstractBase(ABC):
         with pytest.raises(TypeError):
+
             @abstractmethod
             @cfg
             def method(self):
@@ -1538,6 +1570,7 @@ def test_cfg_without_brackets_with_abstract_method():
 
     class Concrete(AbstractBase):
         with pytest.raises(TypeError):
+
             @cfg
             def method(self):
                 return "implemented"
@@ -1552,21 +1585,23 @@ def test_cfg_without_brackets_with_property_setter():
             self._value = None
 
         with pytest.raises(TypeError):
+
             @property
             @cfg
             def value(self):
                 return self._value
 
         with pytest.raises(NameError):
+
             @value.setter
             @cfg
             def value(self, val):
                 self._value = f"set_{val}"
 
     obj = TestClass()
-    
+
     obj.value = "test"
-    assert obj.value == "test" # not `"set_test"` because setter is not available
+    assert obj.value == "test"  # not `"set_test"` because setter is not available
 
 
 def test_cfg_without_brackets_with_property_deleter():
@@ -1575,6 +1610,7 @@ def test_cfg_without_brackets_with_property_deleter():
             self._value = "initial"
 
         with pytest.raises(TypeError):
+
             @property
             @cfg
             def value(self):
@@ -1597,11 +1633,13 @@ def test_cfg_without_brackets_with_descriptor():
             self.name = name
 
         with pytest.raises(TypeError):
+
             @cfg
             def __get__(self, instance, owner):
                 return f"get_{self.name}"
 
         with pytest.raises(TypeError):
+
             @cfg
             def __set__(self, instance, value):
                 self.name = f"set_{value}"
@@ -1619,11 +1657,13 @@ def test_cfg_without_brackets_with_descriptor():
 def test_cfg_without_brackets_with_context_manager():
     class TestContextManager:
         with pytest.raises(TypeError):
+
             @cfg
             def __enter__(self):
                 return "entered"
 
         with pytest.raises(TypeError):
+
             @cfg
             def __exit__(self, exc_type, exc_val, exc_tb):
                 return False
@@ -1636,6 +1676,7 @@ def test_cfg_without_brackets_with_context_manager():
 def test_cfg_without_brackets_with_metaclass():
     class TestMeta(type):
         with pytest.raises(TypeError):
+
             @cfg
             def __new__(mcs, name, bases, attrs):
                 attrs["extra"] = "meta_added"
@@ -1656,6 +1697,7 @@ def test_cfg_without_brackets_with_dataclass():
         value: str
 
         with pytest.raises(TypeError):
+
             @cfg
             def get_value(self):
                 return f"got_{self.value}"
@@ -1671,6 +1713,7 @@ def test_cfg_without_brackets_with_namedtuple():
     TestTuple = namedtuple("TestTuple", ["value"])
 
     with pytest.raises(TypeError):
+
         @cfg
         def process_tuple(tup):
             return f"processed_{tup.value}"
@@ -1688,6 +1731,7 @@ def test_cfg_without_brackets_with_enum():
         B = auto()
 
     with pytest.raises(TypeError):
+
         @cfg
         def process_enum(enum_val):
             return f"enum_{enum_val.name}"
@@ -1700,6 +1744,7 @@ def test_cfg_without_brackets_with_partial_function():
     from functools import partial
 
     with pytest.raises(TypeError):
+
         @cfg
         def base_func(a, b, c):
             return a + b + c
@@ -1716,6 +1761,7 @@ def test_cfg_without_brackets_with_wrapped_partial_function():
         return a + b + c
 
     with pytest.raises(TypeError):
+
         @cfg
         def wrapped_partial():
             return partial(base_func, 1, 2)
@@ -1730,13 +1776,16 @@ def test_cfg_without_brackets_with_class_decorator():
             cls = f(*args, **kwargs)
             cls.extra_attr = "added"
             return cls
+
         return wrapper
 
     with pytest.raises(TypeError):
+
         @class_decorator
         @cfg
         def create_class():
             class DynamicClass: ...
+
             return DynamicClass
 
     with pytest.raises((TypeError, UnboundLocalError)):
@@ -1746,11 +1795,13 @@ def test_cfg_without_brackets_with_class_decorator():
 
 def test_cfg_without_brackets_with_function_returning_class():
     with pytest.raises(TypeError):
+
         @cfg
         def create_class():
             class DynamicClass:
                 def method(self):
                     return "dynamic"
+
             return DynamicClass
 
     with pytest.raises((TypeError, UnboundLocalError)):
@@ -1760,10 +1811,12 @@ def test_cfg_without_brackets_with_function_returning_class():
 
 def test_cfg_without_brackets_with_function_factory():
     with pytest.raises(TypeError):
+
         @cfg
         def function_factory(prefix):
             def inner_func(value):
                 return f"{prefix}_{value}"
+
             return inner_func
 
     with pytest.raises((TypeError, UnboundLocalError)):
@@ -1773,8 +1826,9 @@ def test_cfg_without_brackets_with_function_factory():
 
 def test_cfg_without_brackets_with_decorator_factory():
     from conditional_method._lib import _cache
-    
+
     with pytest.raises(TypeError):
+
         @cfg
         def decorator_factory(prefix):
             def decorator(func):
@@ -1782,17 +1836,22 @@ def test_cfg_without_brackets_with_decorator_factory():
                 def wrapper(*args, **kwargs):
                     result = func(*args, **kwargs)
                     return f"{prefix}_{result}"
+
                 return wrapper
+
             return decorator
+
     assert _cache == {}
     with pytest.raises(UnboundLocalError):
         decorator = decorator_factory("test")
     assert _cache == {}
 
     with pytest.raises(UnboundLocalError):
+
         @decorator
         def test_func():
             return "value"
+
     assert _cache == {}
 
     with pytest.raises((AttributeError, UnboundLocalError)):

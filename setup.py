@@ -4,9 +4,16 @@ import importlib
 conditional_method_module = Extension(
     "_lib",
     sources=["src/conditional_method/_lib.c"],
-    extra_compile_args=["-Wall", "-Wextra", "-std=c99", "-O3", "-march=native", "-ffast-math"] if not (
-        "win32" in importlib.import_module("sys").platform
-    ) else ["/W3", "/std:c11", "/O2", "/arch:AVX2", "/fp:fast"],
+    extra_compile_args=[
+        "-Wall",
+        "-Wextra",
+        "-std=c99",
+        "-O3",
+        "-march=native",
+        "-ffast-math",
+    ]
+    if not ("win32" in importlib.import_module("sys").platform)
+    else ["/W3", "/std:c11", "/O2", "/arch:AVX2", "/fp:fast"],
     define_macros=[("PY_SSIZE_T_CLEAN", None), ("NDEBUG", None)],
     py_limited_api=False,
 )
