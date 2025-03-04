@@ -1,8 +1,8 @@
 from conditional_method._lib import cfg as cfg_c
-from conditional_method.lib import cfg as cfg_py
+from conditional_method.__lib import cfg as cfg_py
 
 from conditional_method._lib import cfg_attr as cfg_attr_c
-from conditional_method.lib import cfg_attr as cfg_attr_py
+from conditional_method.__lib import cfg_attr as cfg_attr_py
 
 # write a benchmark for the two implementations
 import os

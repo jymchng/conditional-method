@@ -1,7 +1,7 @@
 import os
 import pytest
 from functools import wraps, lru_cache
-from conditional_method.lib import cfg_attr
+from conditional_method._lib import cfg_attr
 
 
 # Fix for generator function test
