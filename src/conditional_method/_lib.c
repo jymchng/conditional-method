@@ -48,7 +48,7 @@ static int TypeErrorRaiser_clear(TypeErrorRaiserObject *self) {
   return 0;
 }
 
-static void TypeErrorRaiser_finalize(TypeErrorRaiserObject *self) {
+static void TypeErrorRaiser_finalize(TypeErrorRaiserObject *Py_UNUSED(self)) {
   /* Clear the cache */
   if (_cache != NULL) {
     PyDict_Clear(_cache);
@@ -133,7 +133,7 @@ static void _raise_typeerror(TypeErrorRaiserObject *self) {
 }
 
 static PyObject *TypeErrorRaiser_call(TypeErrorRaiserObject *self,
-                                      PyObject *args, PyObject *kwargs) {
+                                      PyObject *Py_UNUSED(args), PyObject *Py_UNUSED(kwargs)) {
   _raise_typeerror(self);
   return NULL;
 }
@@ -151,8 +151,8 @@ static PyObject *TypeErrorRaiser_set_name(TypeErrorRaiserObject *self,
   return NULL;
 }
 
-static PyObject *TypeErrorRaiser_new(PyTypeObject *type, PyObject *args,
-                                     PyObject *kwargs) {
+static PyObject *TypeErrorRaiser_new(PyTypeObject *type, PyObject *Py_UNUSED(args),
+                                     PyObject *Py_UNUSED(kwargs)) {
   TypeErrorRaiserObject *self;
   self = (TypeErrorRaiserObject *)type->tp_alloc(type, 0);
   if (self != NULL) {
