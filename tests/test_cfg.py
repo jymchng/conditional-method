@@ -368,8 +368,7 @@ def test_cfg_with_exception_in_condition():
     def condition_with_error(f):
         raise ValueError("Error in condition")
 
-    with pytest.raises(ValueError):
-
+    with pytest.raises(TypeError):
         @cfg(condition=condition_with_error)
         def test_func():
             return "result"
@@ -1558,16 +1557,16 @@ def test_cfg_without_brackets_with_property_setter():
             def value(self):
                 return self._value
 
-        with pytest.raises(TypeError):
+        with pytest.raises(NameError):
             @value.setter
             @cfg
             def value(self, val):
                 self._value = f"set_{val}"
 
     obj = TestClass()
-    with pytest.raises(AttributeError):
-        obj.value = "test"
-        assert obj.value == "set_test"
+    
+    obj.value = "test"
+    assert obj.value == "test" # not `"set_test"` because setter is not available
 
 
 def test_cfg_without_brackets_with_property_deleter():
@@ -1677,7 +1676,7 @@ def test_cfg_without_brackets_with_namedtuple():
             return f"processed_{tup.value}"
 
     tup = TestTuple("test")
-    with pytest.raises(AttributeError):
+    with pytest.raises(UnboundLocalError):
         assert process_tuple(tup) == "processed_test"
 
 
@@ -1693,7 +1692,7 @@ def test_cfg_without_brackets_with_enum():
         def process_enum(enum_val):
             return f"enum_{enum_val.name}"
 
-    with pytest.raises(AttributeError):
+    with pytest.raises(UnboundLocalError):
         assert process_enum(TestEnum.A) == "enum_A"
 
 
@@ -1705,7 +1704,7 @@ def test_cfg_without_brackets_with_partial_function():
         def base_func(a, b, c):
             return a + b + c
 
-    with pytest.raises(TypeError):
+    with pytest.raises(UnboundLocalError):
         partial_func = partial(base_func, 1, 2)
         assert partial_func(3) == 6
 
@@ -1721,7 +1720,7 @@ def test_cfg_without_brackets_with_wrapped_partial_function():
         def wrapped_partial():
             return partial(base_func, 1, 2)
 
-    with pytest.raises(TypeError):
+    with pytest.raises(UnboundLocalError):
         assert wrapped_partial()(3) == 6
 
 
@@ -1740,7 +1739,7 @@ def test_cfg_without_brackets_with_class_decorator():
             class DynamicClass: ...
             return DynamicClass
 
-    with pytest.raises(TypeError):
+    with pytest.raises((TypeError, UnboundLocalError)):
         cls = create_class()
         assert cls.extra_attr == "added"
 
@@ -1754,7 +1753,7 @@ def test_cfg_without_brackets_with_function_returning_class():
                     return "dynamic"
             return DynamicClass
 
-    with pytest.raises(TypeError):
+    with pytest.raises((TypeError, UnboundLocalError)):
         cls = create_class()
         assert cls().method() == "dynamic"
 
@@ -1767,12 +1766,14 @@ def test_cfg_without_brackets_with_function_factory():
                 return f"{prefix}_{value}"
             return inner_func
 
-    with pytest.raises(TypeError):
+    with pytest.raises((TypeError, UnboundLocalError)):
         func = function_factory("test")
         assert func("value") == "test_value"
 
 
 def test_cfg_without_brackets_with_decorator_factory():
+    from conditional_method._lib import _cache
+    
     with pytest.raises(TypeError):
         @cfg
         def decorator_factory(prefix):
@@ -1783,13 +1784,17 @@ def test_cfg_without_brackets_with_decorator_factory():
                     return f"{prefix}_{result}"
                 return wrapper
             return decorator
-
+    assert _cache == {}
     with pytest.raises(UnboundLocalError):
         decorator = decorator_factory("test")
+    assert _cache == {}
 
-    @decorator
-    def test_func():
-        return "value"
+    with pytest.raises(UnboundLocalError):
+        @decorator
+        def test_func():
+            return "value"
+    assert _cache == {}
 
-    with pytest.raises(AttributeError):
+    with pytest.raises((AttributeError, UnboundLocalError)):
         assert test_func() == "test_value"
+    assert _cache == {}

@@ -1,4 +1,5 @@
 from conditional_method import cm
+from conditional_method._lib import _cache
 
 
 class A:
@@ -25,6 +26,8 @@ class A:
     @cm(condition=True)
     def hello(self):
         print("A::hello True 2")
+
+print("_cache: ", _cache)
 
 
 class B:
@@ -59,9 +62,11 @@ class B:
     def hello(self, value):
         print(f"B::hello.setter Two; value = {value}")
 
+print("_cache: ", _cache)
 
 A().hello()
 A().bye()
+print("_cache: ", _cache)
 
 print(B.__dict__)
 
@@ -69,18 +74,22 @@ b = B()
 b.hello = 69
 b.hello
 b.bye()
+print("_cache: ", _cache)
 
 
 @cm(condition=False)
 class Person:
     def hello(self):
         print("Person::hello One")
+print("_cache: ", _cache)
 
 
 @cm(condition=True)
 class Person:
     def hello(self):
         print("Person::hello Two")
+print("_cache: ", _cache)
 
 
 Person().hello()
+print("_cache: ", _cache)

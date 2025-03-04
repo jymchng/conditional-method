@@ -209,7 +209,6 @@ def scratchpad(session: Session):
         "--group",
         "examples",
         "python",
-        "-m",
     ]
     session.run(*command)
 

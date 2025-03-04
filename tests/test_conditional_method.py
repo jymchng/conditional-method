@@ -59,7 +59,7 @@ def test_conditional_method_with_debug_env_var_normal_class(debug_env_var_value)
     assert DoSomeWorkClass.tuesday(DoSomeWorkClass(), 1) == "Tuesday::Four 1"
     assert DoSomeWorkClass.tuesday(DoSomeWorkClass(), 69) == "Tuesday::Four 69"
 
-
+    
 def test_conditional_method_with_debug_env_var_normal_class_with_classmethod(
     debug_env_var_value,
 ):

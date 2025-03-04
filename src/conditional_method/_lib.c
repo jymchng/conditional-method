@@ -58,6 +58,15 @@ static int TypeErrorRaiser_clear(TypeErrorRaiserObject *self)
   return 0;
 }
 
+static void TypeErrorRaiser_finalize(TypeErrorRaiserObject *self)
+{
+  /* Clear the cache */
+  if (_cache != NULL)
+  {
+    PyDict_Clear(_cache);
+  }
+}
+
 static void _raise_typeerror(TypeErrorRaiserObject *self)
 {
   /* Clear the cache */
@@ -203,6 +212,12 @@ static PyObject *TypeErrorRaiser_new(PyTypeObject *type, PyObject *args,
   return (PyObject *)self;
 }
 
+static PyMemberDef TypeErrorRaiser_members[] = {
+    {"__qualname__", T_OBJECT_EX, offsetof(TypeErrorRaiserObject, qualname), 0,
+     "Qualified name for the raiser"},
+    {NULL} /* Sentinel */
+};
+
 static PyMethodDef TypeErrorRaiser_methods[] = {
     {"__set_name__", (PyCFunction)TypeErrorRaiser_set_name, METH_VARARGS,
      "Handle the __set_name__ protocol."},
@@ -221,7 +236,9 @@ static PyTypeObject TypeErrorRaiserType = {
     .tp_call = (ternaryfunc)TypeErrorRaiser_call,
     .tp_traverse = (traverseproc)TypeErrorRaiser_traverse,
     .tp_clear = (inquiry)TypeErrorRaiser_clear,
+    .tp_finalize = (destructor)TypeErrorRaiser_finalize,
     .tp_methods = TypeErrorRaiser_methods,
+    .tp_members = TypeErrorRaiser_members,
 };
 
 /* Function to create a new TypeErrorRaiser instance */
