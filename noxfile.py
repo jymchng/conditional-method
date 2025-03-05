@@ -251,6 +251,7 @@ def clean(session: Session):
     session.run("uv", "clean")
     session.run("rm", "-rf", "build", "dist", "*.egg-info")
 
+
 @session(
     dependency_group="examples",
 )
