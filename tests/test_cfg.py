@@ -1825,7 +1825,9 @@ def test_cfg_without_brackets_with_function_factory():
 
 
 def test_cfg_without_brackets_with_decorator_factory():
-    from conditional_method._lib import _cache
+    from conditional_method import cm
+
+    _cache = cm._cache
 
     with pytest.raises(TypeError):
 

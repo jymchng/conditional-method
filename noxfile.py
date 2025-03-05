@@ -250,6 +250,64 @@ def alter_session(
 def clean(session: Session):
     session.run("uv", "clean")
     session.run("rm", "-rf", "build", "dist", "*.egg-info")
+    import glob
+    import os
+    import shutil
+    from pathlib import Path
+
+    # Define patterns that match any compiled Python extensions
+    extensions_patterns = [
+        # Linux .so files (matches any .so file from Python extensions)
+        "**/*.cpython-*.so",
+        "**/*.abi3.so",
+        "**/*.so",
+        # Windows .pyd files (matches any .pyd extension)
+        "**/*.pyd",
+        # Specific directories if needed
+        "src/conditional_method/**/*.so",
+        "src/conditional_method/**/*.pyd",
+        # Build directory extensions
+        "build/**/*.so",
+        "build/**/*.pyd",
+    ]
+
+    # Remove dist directory
+    if os.path.exists("dist"):
+        shutil.rmtree("dist")
+
+    # Remove build directory
+    if os.path.exists("build"):
+        shutil.rmtree("build")
+
+    for pattern in extensions_patterns:
+        for file in glob.glob(pattern, recursive=True):
+            try:
+                os.remove(file)
+                session.log(f"Removed: {file}")
+            except OSError as e:
+                session.log(f"Error removing {file}: {e}")
+
+    # Remove __pycache__ directories and .pyc files
+    for root, dirs, files in os.walk("."):
+        # Remove __pycache__ directories
+        for dir in dirs:
+            if dir == "__pycache__":
+                cache_dir = Path(root) / dir
+                try:
+                    shutil.rmtree(cache_dir)
+                    session.log(f"Removed cache directory: {cache_dir}")
+                except OSError as e:
+                    session.log(f"Error removing {cache_dir}: {e}")
+
+        # Remove .pyc files
+        for file in files:
+            if file.endswith(".pyc"):
+                pyc_file = Path(root) / file
+                try:
+                    os.remove(pyc_file)
+                    session.log(f"Removed: {pyc_file}")
+                except OSError as e:
+                    session.log(f"Error removing {pyc_file}: {e}")
 
 
 @session(
@@ -453,3 +511,13 @@ def list_dist_files(session: Session):
 @session(dependency_group="dev", default_posargs=[".", "--check-untyped-defs"])
 def type_check(session: Session):
     session.run("uv", "tool", "run", "mypy")
+
+
+@session(dependency_group="dev")
+def dev(session: Session):
+    clean(session)
+    format(session)
+    check(session)
+    build(session)
+    list_dist_files(session)
+    test(session)

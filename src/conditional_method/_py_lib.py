@@ -50,6 +50,7 @@ def _raise_exec(qualname: str = ""):
                     inst = object.__new__(cls)
                     inst.__qualname__ = qualname
                     cm._cache.clear()
+                    cfg_attr._cache.clear()
                     return inst
 
                 def __init__(self):
@@ -60,6 +61,7 @@ def _raise_exec(qualname: str = ""):
                     _inst = None
 
                     cm._cache.clear()
+                    cfg_attr._cache.clear()
                     f_qualnames = ", ".join(self.f_qualnames)
                     raise TypeError(
                         f"None of the conditions is true for `{f_qualnames or _TypeErrorRaiser.__qualname__}`"
@@ -70,6 +72,7 @@ def _raise_exec(qualname: str = ""):
                     nonlocal _inst
                     _inst = None
                     cm._cache.clear()
+                    cfg_attr._cache.clear()
 
                 def __call__(self, *_args, **_kwargs):
                     self._raise_typeerror()
