@@ -289,6 +289,8 @@ Result: Processed: test_input
 
 Without changing your implementation, you can toggle features on and off or change how they're decorated simply by updating environment variables or other configuration.
 
+When the feature flag is **OFF**, the function becomes un-callable at runtime as it will raise a `TypeError`.
+
 ## 🔍 Debugging
 
 You can enable debug logging by setting the environment variable `__conditional_method_debug__` to any value other than "false":
