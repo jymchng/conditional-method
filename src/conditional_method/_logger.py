@@ -1,7 +1,7 @@
 ENV_KEY_TO_ACTIVATE_DEBUG_LOGGER = "__conditional_method_debug__"
 TYPE_CHECKING = False
 if TYPE_CHECKING:
-    from typing import Any, Callable, TypeVar
+    from typing import Any, Callable, TypeVar, cast
     from logging import Logger
 
     T = TypeVar("T")
@@ -18,7 +18,10 @@ def _make_noop_logger() -> "Logger":
         def __bool__(self) -> bool:
             return False
 
-    return NoopLogger()
+    if TYPE_CHECKING:
+        return cast("Logger", NoopLogger())
+    else:
+        return NoopLogger()
 
 
 def immediately_invoke(f: "Callable[[], 'T']") -> "T":

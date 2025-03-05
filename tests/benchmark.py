@@ -44,7 +44,7 @@ def double_result(func):
     return wrapper
 
 
-@pytest.mark.benchmark(group="cfg_implementations")
+@pytest.mark.benchmark(group="c_py_cfg_true_condition")
 def test_benchmark_cfg_c_true_condition(benchmark):
     """Benchmark the C implementation with a True condition."""
 
@@ -55,11 +55,10 @@ def test_benchmark_cfg_c_true_condition(benchmark):
 
         return test_func
 
-    func = setup()
-    benchmark(func)
+    benchmark(setup)
 
 
-@pytest.mark.benchmark(group="cfg_implementations")
+@pytest.mark.benchmark(group="c_py_cfg_true_condition")
 def test_benchmark_cfg_py_true_condition(benchmark):
     """Benchmark the Python implementation with a True condition."""
 
@@ -70,11 +69,10 @@ def test_benchmark_cfg_py_true_condition(benchmark):
 
         return test_func
 
-    func = setup()
-    benchmark(func)
+    benchmark(setup)
 
 
-@pytest.mark.benchmark(group="cfg_implementations")
+@pytest.mark.benchmark(group="c_py_cfg_false_condition")
 def test_benchmark_cfg_c_false_condition(benchmark):
     """Benchmark the C implementation with a False condition."""
 
@@ -93,11 +91,10 @@ def test_benchmark_cfg_c_false_condition(benchmark):
 
             return error_func
 
-    func = setup()
-    benchmark(lambda: pytest.raises(TypeError, func))
+    benchmark(setup)
 
 
-@pytest.mark.benchmark(group="cfg_implementations")
+@pytest.mark.benchmark(group="c_py_cfg_false_condition")
 def test_benchmark_cfg_py_false_condition(benchmark):
     """Benchmark the Python implementation with a False condition."""
 
@@ -116,11 +113,10 @@ def test_benchmark_cfg_py_false_condition(benchmark):
 
             return error_func
 
-    func = setup()
-    benchmark(lambda: pytest.raises(TypeError, func))
+    benchmark(setup)
 
 
-@pytest.mark.benchmark(group="cfg_implementations")
+@pytest.mark.benchmark(group="c_py_cfg_callable_condition")
 def test_benchmark_cfg_c_with_callable_condition(benchmark):
     """Benchmark the C implementation with a callable condition."""
 
@@ -131,11 +127,10 @@ def test_benchmark_cfg_c_with_callable_condition(benchmark):
 
         return test_func
 
-    func = setup()
-    benchmark(func)
+    benchmark(setup)
 
 
-@pytest.mark.benchmark(group="cfg_implementations")
+@pytest.mark.benchmark(group="c_py_cfg_callable_condition")
 def test_benchmark_cfg_py_with_callable_condition(benchmark):
     """Benchmark the Python implementation with a callable condition."""
 
@@ -146,11 +141,10 @@ def test_benchmark_cfg_py_with_callable_condition(benchmark):
 
         return test_func
 
-    func = setup()
-    benchmark(func)
+    benchmark(setup)
 
 
-@pytest.mark.benchmark(group="cfg_implementations")
+@pytest.mark.benchmark(group="c_py_cfg_with_args_kwargs")
 def test_benchmark_cfg_c_with_args_kwargs(benchmark):
     """Benchmark the C implementation with args and kwargs."""
 
@@ -161,11 +155,10 @@ def test_benchmark_cfg_c_with_args_kwargs(benchmark):
 
         return lambda: test_func(1, 2, c=3)
 
-    func = setup()
-    benchmark(func)
+    benchmark(setup)
 
 
-@pytest.mark.benchmark(group="cfg_implementations")
+@pytest.mark.benchmark(group="c_py_cfg_with_args_kwargs")
 def test_benchmark_cfg_py_with_args_kwargs(benchmark):
     """Benchmark the Python implementation with args and kwargs."""
 
@@ -176,11 +169,10 @@ def test_benchmark_cfg_py_with_args_kwargs(benchmark):
 
         return lambda: test_func(1, 2, c=3)
 
-    func = setup()
-    benchmark(func)
+    benchmark(setup)
 
 
-@pytest.mark.benchmark(group="cfg_implementations")
+@pytest.mark.benchmark(group="c_py_cfg_true_condition")
 def test_benchmark_cfg_c_true_condition(benchmark):
     """Benchmark the C implementation with a True condition."""
 
@@ -191,11 +183,10 @@ def test_benchmark_cfg_c_true_condition(benchmark):
 
         return test_func
 
-    func = setup()
-    benchmark(func)
+    benchmark(setup)
 
 
-@pytest.mark.benchmark(group="cfg_implementations")
+@pytest.mark.benchmark(group="c_py_cfg_true_condition")
 def test_benchmark_cfg_py_true_condition(benchmark):
     """Benchmark the Python implementation with a True condition."""
 
@@ -206,11 +197,10 @@ def test_benchmark_cfg_py_true_condition(benchmark):
 
         return test_func
 
-    func = setup()
-    benchmark(func)
+    benchmark(setup)
 
 
-@pytest.mark.benchmark(group="cfg_implementations")
+@pytest.mark.benchmark(group="c_py_cfg_with_decorators")
 def test_benchmark_cfg_c_with_decorators(benchmark):
     """Benchmark the C implementation with decorators."""
 
@@ -221,11 +211,10 @@ def test_benchmark_cfg_c_with_decorators(benchmark):
 
         return test_func
 
-    func = setup()
-    benchmark(func)
+    benchmark(setup)
 
 
-@pytest.mark.benchmark(group="cfg_implementations")
+@pytest.mark.benchmark(group="c_py_cfg_with_decorators")
 def test_benchmark_cfg_py_with_decorators(benchmark):
     """Benchmark the Python implementation with decorators."""
 
@@ -236,11 +225,10 @@ def test_benchmark_cfg_py_with_decorators(benchmark):
 
         return test_func
 
-    func = setup()
-    benchmark(func)
+    benchmark(setup)
 
 
-@pytest.mark.benchmark(group="cfg_attr_implementations")
+@pytest.mark.benchmark(group="c_py_cfg_attr_true_condition")
 def test_benchmark_cfg_attr_c_true_condition(benchmark):
     """Benchmark the C implementation of cfg_attr with a True condition."""
 
@@ -251,11 +239,10 @@ def test_benchmark_cfg_attr_c_true_condition(benchmark):
 
         return test_func
 
-    func = setup()
-    benchmark(func)
+    benchmark(setup)
 
 
-@pytest.mark.benchmark(group="cfg_attr_implementations")
+@pytest.mark.benchmark(group="c_py_cfg_attr_true_condition")
 def test_benchmark_cfg_attr_py_true_condition(benchmark):
     """Benchmark the Python implementation of cfg_attr with a True condition."""
 
@@ -266,11 +253,10 @@ def test_benchmark_cfg_attr_py_true_condition(benchmark):
 
         return test_func
 
-    func = setup()
-    benchmark(func)
+    benchmark(setup)
 
 
-@pytest.mark.benchmark(group="cfg_attr_implementations")
+@pytest.mark.benchmark(group="c_py_cfg_attr_false_condition")
 def test_benchmark_cfg_attr_c_false_condition(benchmark):
     """Benchmark the C implementation of cfg_attr with a False condition."""
 
@@ -281,11 +267,10 @@ def test_benchmark_cfg_attr_c_false_condition(benchmark):
 
         return test_func
 
-    func = setup()
-    benchmark(func)
+    benchmark(setup)
 
 
-@pytest.mark.benchmark(group="cfg_attr_implementations")
+@pytest.mark.benchmark(group="c_py_cfg_attr_false_condition")
 def test_benchmark_cfg_attr_py_false_condition(benchmark):
     """Benchmark the Python implementation of cfg_attr with a False condition."""
 
@@ -296,11 +281,10 @@ def test_benchmark_cfg_attr_py_false_condition(benchmark):
 
         return test_func
 
-    func = setup()
-    benchmark(func)
+    benchmark(setup)
 
 
-@pytest.mark.benchmark(group="cfg_attr_implementations")
+@pytest.mark.benchmark(group="c_py_cfg_attr_multiple_decorators")
 def test_benchmark_cfg_attr_c_multiple_decorators(benchmark):
     """Benchmark the C implementation of cfg_attr with multiple decorators."""
 
@@ -314,11 +298,10 @@ def test_benchmark_cfg_attr_c_multiple_decorators(benchmark):
 
         return test_func
 
-    func = setup()
-    benchmark(func)
+    benchmark(setup)
 
 
-@pytest.mark.benchmark(group="cfg_attr_implementations")
+@pytest.mark.benchmark(group="c_py_cfg_attr_multiple_decorators")
 def test_benchmark_cfg_attr_py_multiple_decorators(benchmark):
     """Benchmark the Python implementation of cfg_attr with multiple decorators."""
 
@@ -332,11 +315,10 @@ def test_benchmark_cfg_attr_py_multiple_decorators(benchmark):
 
         return test_func
 
-    func = setup()
-    benchmark(func)
+    benchmark(setup)
 
 
-@pytest.mark.benchmark(group="cfg_attr_implementations")
+@pytest.mark.benchmark(group="c_py_cfg_attr_callable_condition")
 def test_benchmark_cfg_attr_c_callable_condition(benchmark):
     """Benchmark the C implementation of cfg_attr with a callable condition."""
 
@@ -350,11 +332,10 @@ def test_benchmark_cfg_attr_c_callable_condition(benchmark):
 
         return test_func
 
-    func = setup()
-    benchmark(func)
+    benchmark(setup)
 
 
-@pytest.mark.benchmark(group="cfg_attr_implementations")
+@pytest.mark.benchmark(group="c_py_cfg_attr_callable_condition")
 def test_benchmark_cfg_attr_py_callable_condition(benchmark):
     """Benchmark the Python implementation of cfg_attr with a callable condition."""
 
@@ -368,11 +349,10 @@ def test_benchmark_cfg_attr_py_callable_condition(benchmark):
 
         return test_func
 
-    func = setup()
-    benchmark(func)
+    benchmark(setup)
 
 
-@pytest.mark.benchmark(group="cfg_attr_implementations")
+@pytest.mark.benchmark(group="c_py_cfg_attr_complex_scenario")
 def test_benchmark_cfg_attr_c_complex_scenario(benchmark):
     """Benchmark the C implementation of cfg_attr in a complex scenario."""
 
@@ -388,11 +368,10 @@ def test_benchmark_cfg_attr_c_complex_scenario(benchmark):
 
         return test_func
 
-    func = setup()
-    benchmark(lambda: func("custom"))
+    benchmark(setup)
 
 
-@pytest.mark.benchmark(group="cfg_attr_implementations")
+@pytest.mark.benchmark(group="c_py_cfg_attr_complex_scenario")
 def test_benchmark_cfg_attr_py_complex_scenario(benchmark):
     """Benchmark the Python implementation of cfg_attr in a complex scenario."""
 
@@ -408,5 +387,4 @@ def test_benchmark_cfg_attr_py_complex_scenario(benchmark):
 
         return test_func
 
-    func = setup()
-    benchmark(lambda: func("custom"))
+    benchmark(setup)

@@ -9,6 +9,27 @@ authors = [
 ]
 dependencies = []
 
+[tool.hatch.build.targets.sdist]
+include = [
+    "conditional_method",
+]
+exclude = [
+    "_lib.c",
+    "*.so",
+    "*.pyc",
+    "*.pyd",
+    "setup.py",
+]
+
+[tool.hatch.build.targets.wheel]
+exclude = [
+    "_lib.c",
+    "*.so",
+    "*.pyc",
+    "*.pyd",
+    "setup.py",
+]
+
 [build-system]
 requires = ["hatchling", "setuptools>=75.3.0"]
 build-backend = "hatchling.build"

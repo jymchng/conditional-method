@@ -166,10 +166,12 @@ def session(
             default_posargs=default_posargs,
             **kwargs,
         )
+    f_name = f.__name__.replace("_", "-")
     nox_session_kwargs = {
         **DEFAULT_SESSION_KWARGS,
         **kwargs,
     }
+    nox_session_kwargs["name"] = f_name
 
     if dependency_group or environment_mapping or default_posargs:
 
@@ -241,6 +243,13 @@ def alter_session(
     for key, value in old_kwargs.items():
         setattr(session, key, value)
 
+
+@session(
+    dependency_group="dev",
+)
+def clean(session: Session):
+    session.run("uv", "clean")
+    session.run("rm", "-rf", "build", "dist", "*.egg-info")
 
 @session(
     dependency_group="examples",
@@ -358,18 +367,20 @@ def check(session: Session):
 
 @session(dependency_group="build")
 def build(session: Session):
-    command = [
-        shutil.which("uv"),
-        "run",
-        "setup.py",
-        "build",
-    ]
-    session.run(*command)
-    # copy from ./build to ./src/conditional_method/_lib.c
-    shutil.copy(
-        "./build/lib.linux-x86_64-cpython-38/_lib.cpython-38-x86_64-linux-gnu.so",
-        "./src/conditional_method/_lib.cpython-38-x86_64-linux-gnu.so",
-    )
+    # for c extension which is now defuncted
+    # command = [
+    #     shutil.which("uv"),
+    #     "run",
+    #     "setup.py",
+    #     "build",
+    # ]
+    # session.run(*command)
+    # # copy from ./build to ./src/conditional_method/_lib.c
+    # shutil.copy(
+    #     "./build/lib.linux-x86_64-cpython-38/_lib.cpython-38-x86_64-linux-gnu.so",
+    #     "./src/conditional_method/_lib.cpython-38-x86_64-linux-gnu.so",
+    # )
+    session.run("uv", "build")
 
 
 @session(dependency_group="test", default_posargs=["tests/benchmark.py", "-v"])
@@ -384,6 +395,7 @@ def benchmark(session: Session):
         "pytest",
     )
 
+
 @session(dependency_group="dev")
 def list_dist_files(session: Session):
     """List all files packaged in the latest distribution."""
@@ -394,21 +406,49 @@ def list_dist_files(session: Session):
 
     # Find the latest wheel file in the dist directory
     wheel_files = sorted(glob.glob("dist/*.whl"), key=os.path.getmtime, reverse=True)
-    
-    if not wheel_files:
-        session.error("No wheel files found in dist/ directory")
+    tarball_files = sorted(
+        glob.glob("dist/*.tar.gz"), key=os.path.getmtime, reverse=True
+    )
+
+    if not wheel_files and not tarball_files:
+        session.error("No distribution files found in dist/ directory")
         return
-    
-    latest_wheel = wheel_files[0]
-    session.log(f"Examining contents of {latest_wheel}")
-    
-    # Wheel files are zip files, so we can use zipfile to list contents
-    with zipfile.ZipFile(latest_wheel, 'r') as wheel:
-        file_list = wheel.namelist()
-        
-        # Print the files in a readable format
-        session.log(f"Contents of {Path(latest_wheel).name}:")
-        for file in sorted(file_list):
-            session.log(f"  - {file}")
-        
-        session.log(f"Total files: {len(file_list)}")
+
+    # Process wheel file if available
+    if wheel_files:
+        latest_wheel = wheel_files[0]
+        session.log(f"Examining contents of {latest_wheel}")
+
+        # Wheel files are zip files, so we can use zipfile to list contents
+        with zipfile.ZipFile(latest_wheel, "r") as wheel:
+            file_list = wheel.namelist()
+
+            # Print the files in a readable format
+            session.log(f"Contents of {Path(latest_wheel).name}:")
+            for file in sorted(file_list):
+                session.log(f"  - {file}")
+
+            session.log(f"Total files in wheel: {len(file_list)}")
+
+    # Process tarball file if available
+    if tarball_files:
+        latest_tarball = tarball_files[0]
+        session.log(f"Examining contents of {latest_tarball}")
+
+        # Tarball files can be opened with tarfile
+        import tarfile
+
+        with tarfile.open(latest_tarball, "r:gz") as tar:
+            file_list = tar.getnames()
+
+            # Print the files in a readable format
+            session.log(f"Contents of {Path(latest_tarball).name}:")
+            for file in sorted(file_list):
+                session.log(f"  - {file}")
+
+            session.log(f"Total files in tarball: {len(file_list)}")
+
+
+@session(dependency_group="dev", default_posargs=[".", "--check-untyped-defs"])
+def type_check(session: Session):
+    session.run("uv", "tool", "run", "mypy")

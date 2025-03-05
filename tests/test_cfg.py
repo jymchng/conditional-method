@@ -4,7 +4,7 @@ import pytest
 from functools import wraps, lru_cache
 
 # Import the cfg function
-from conditional_method._lib import cfg, conditional_method, if_
+from conditional_method import cfg, conditional_method, if_
 
 
 def add_prefix_to_yielded(prefix):
@@ -368,7 +368,7 @@ def test_cfg_with_exception_in_condition():
     def condition_with_error(f):
         raise ValueError("Error in condition")
 
-    with pytest.raises(TypeError):
+    with pytest.raises(ValueError):
 
         @cfg(condition=condition_with_error)
         def test_func():

@@ -133,7 +133,8 @@ static void _raise_typeerror(TypeErrorRaiserObject *self) {
 }
 
 static PyObject *TypeErrorRaiser_call(TypeErrorRaiserObject *self,
-                                      PyObject *Py_UNUSED(args), PyObject *Py_UNUSED(kwargs)) {
+                                      PyObject *Py_UNUSED(args),
+                                      PyObject *Py_UNUSED(kwargs)) {
   _raise_typeerror(self);
   return NULL;
 }
@@ -151,7 +152,8 @@ static PyObject *TypeErrorRaiser_set_name(TypeErrorRaiserObject *self,
   return NULL;
 }
 
-static PyObject *TypeErrorRaiser_new(PyTypeObject *type, PyObject *Py_UNUSED(args),
+static PyObject *TypeErrorRaiser_new(PyTypeObject *type,
+                                     PyObject *Py_UNUSED(args),
                                      PyObject *Py_UNUSED(kwargs)) {
   TypeErrorRaiserObject *self;
   self = (TypeErrorRaiserObject *)type->tp_alloc(type, 0);
@@ -697,13 +699,6 @@ PyMODINIT_FUNC PyInit__lib(void) {
   if (PyModule_AddObject(m, "_TypeErrorRaiser",
                          (PyObject *)&TypeErrorRaiserType) < 0) {
     Py_DECREF(&TypeErrorRaiserType);
-    Py_DECREF(m);
-    return NULL;
-  }
-
-  /* Create the cache dictionary */
-  _cache = PyDict_New();
-  if (_cache == NULL) {
     Py_DECREF(m);
     return NULL;
   }
