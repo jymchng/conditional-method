@@ -44,7 +44,6 @@ def _raise_exec(qualname: str = ""):
 
             class _TypeErrorRaiser:
                 __slots__ = ("f_qualnames", "__qualname__")
-                __qualname__ = qualname
 
                 def __new__(cls):
                     inst = object.__new__(cls)

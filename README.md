@@ -159,7 +159,7 @@ class DatabaseConnector:
             print("Connecting to development database...")
             # Development-specific connection logic
     
-    if not (os.environ.get("ENV") == "development" and os.environ.get("ENV") == "production")
+    if not (os.environ.get("ENV") == "development" and os.environ.get("ENV") == "production"):
         def connect(self, config):
             """Used in any other environment"""
             print("Connecting to local/test database...")
@@ -182,60 +182,6 @@ def connect_to_db():
     # Development implementation
     print("Connecting to development database...")
 ```
-
-### `@cfg` can also be applied to classes
-
-```python
-import os
-from conditional_method import conditional_method
-
-# Set environment for demonstration
-os.environ["ENV"] = "production"
-
-@conditional_method(condition=os.environ.get("ENV") == "production")
-class DatabaseConnector:
-    """Production database connector with advanced security features"""
-    
-    def __init__(self, host, port, user, password):
-        self.host = host
-        self.port = port
-        self.user = user
-        self.password = password
-        print("Initializing PRODUCTION database connector")
-        
-    def connect(self):
-        print(f"Connecting to PRODUCTION database at {self.host}:{self.port}")
-        print("Using enhanced security protocols")
-        # Production-specific connection logic
-
-@conditional_method(condition=os.environ.get("ENV") == "development")
-class DatabaseConnector:
-    """Development database connector with debugging capabilities"""
-    
-    def __init__(self, host="localhost", port=5432, user="dev", password="dev"):
-        self.host = host
-        self.port = port
-        self.user = user
-        self.password = password
-        print("Initializing DEVELOPMENT database connector")
-        
-    def connect(self):
-        print(f"Connecting to DEVELOPMENT database at {self.host}:{self.port}")
-        print("Debug mode enabled")
-        # Development-specific connection logic with debug features
-
-# Usage
-if __name__ == "__main__":
-    # Since ENV=production, this will use the production version
-    db = DatabaseConnector("prod-db.example.com", 5432, "app_user", "secure_pwd")
-    db.connect()
-    
-    # If we changed ENV to development before importing:
-    # db = DatabaseConnector()  # Default parameters would work
-    # db.connect()  # Would show debugging output
-```
-
-Note!! But maybe it is easier to place `@conditional_method` decorator on the `def __init__(...)` constructor instead.
 
 # `@cfg_attr` Decorator Usage
 

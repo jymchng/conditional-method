@@ -1,6 +1,7 @@
 from functools import wraps
 import contextlib
 import nox
+import nox.command
 from nox.sessions import Session
 from nox import session as nox_session
 import shutil
@@ -173,17 +174,14 @@ def session(
     }
     nox_session_kwargs["name"] = f_name
 
-    if dependency_group or environment_mapping or default_posargs:
+    @wraps(f)
+    def wrapper(session: Session, *args, **kwargs):
+        altered_session = AlteredSession(
+            session, dependency_group, environment_mapping, default_posargs
+        )
+        return f(altered_session, *args, **kwargs)
 
-        @wraps(f)
-        def wrapper(session: Session, *args, **kwargs):
-            altered_session = AlteredSession(
-                session, dependency_group, environment_mapping, default_posargs
-            )
-            return f(altered_session, *args, **kwargs)
-
-        return nox_session(wrapper, **nox_session_kwargs)
-    return nox_session(f, **nox_session_kwargs)
+    return nox_session(wrapper, **nox_session_kwargs)
 
 
 # you can either run `nox -s test` or `nox -s test -- tests/test_cfg.py -s -vv`
@@ -521,3 +519,67 @@ def dev(session: Session):
     build(session)
     list_dist_files(session)
     test(session)
+
+
+@session(dependency_group="dev")
+def ci(session: Session):
+    list_dist_files(session)
+    test(session)
+
+
+@session(reuse_venv=False)
+def test_client_install_run(session: Session):
+    with alter_session(session, dependency_group="build"):
+        clean(session)
+        build(session)
+    with alter_session(session, dependency_group="dev"):
+        list_dist_files(session)
+    session.run("pip", "uninstall", "conditional-method", "-y")
+    # Find the tarball with the largest semver version
+    import glob
+    import re
+    from packaging import version
+
+    # Get all tarball files
+    tarball_files = glob.glob("dist/conditional_method-*.tar.gz")
+
+    if not tarball_files:
+        session.error("No tarball files found in dist/ directory")
+
+    # Extract version numbers using regex
+    version_pattern = re.compile(
+        r"conditional_method-([0-9]+\.[0-9]+\.[0-9]+(?:\.[0-9]+)?(?:(?:a|b|rc)[0-9]+)?(?:\.post[0-9]+)?(?:\.dev[0-9]+)?).tar.gz"
+    )
+
+    # Create a list of (file_path, version) tuples
+    versioned_files = []
+    for file_path in tarball_files:
+        match = version_pattern.search(file_path)
+        if match:
+            ver_str = match.group(1)
+            versioned_files.append((file_path, version.parse(ver_str)))
+
+    if not versioned_files:
+        session.error("Could not extract version information from tarball files")
+
+    # Sort by version (highest first) and get the path
+    latest_tarball = sorted(versioned_files, key=lambda x: x[1], reverse=True)[0][0]
+    session.log(f"Installing latest version: {latest_tarball}")
+    session.run(
+        "uv",
+        "run",
+        "pip",
+        "install",
+        latest_tarball,
+    )
+    session.run(
+        "uv",
+        "run",
+        "python",
+        "-c",
+        "from conditional_method import cfg; print('cfg imported')",
+    )
+    session.run("uv", "run", "pip", "uninstall", "conditional-method", "-y")
+
+    with alter_session(session, dependency_group="test"):
+        test(session)
