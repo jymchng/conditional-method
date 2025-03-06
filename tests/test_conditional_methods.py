@@ -218,4 +218,8 @@ class TestConditionalMethods:
                     return "This should not be used as well"
 
         # Check that the error message mentions the condition issue
-        assert "Error calling __set_name__ on '_TypeErrorRaiser'" in str(excinfo.value)
+        assert (
+            # "Error calling __set_name__ on 'conditional_method._TypeErrorRaiser' instance 'method1' in 'AllFalseMethods'"
+            "Error calling __set_name__ on '_TypeErrorRaiser' instance 'method1' in 'AllFalseMethods'"
+            in str(excinfo.value)
+        )

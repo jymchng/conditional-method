@@ -1,30 +1,36 @@
 <div align="center">
 <h1>Conditional Method</h1>
 <h2>[Repository is a Work In Progress]</h2>
-<div><em>The code is very usable though...</em></div>
-  ____
 
+<h3> Compatibility and Version </h3>
+<img src="https://img.shields.io/badge/%3E=python-3.8-blue.svg" alt="Python compat">
+<a href="https://pypi.python.org/pypi/conditional-method"><img src="https://img.shields.io/pypi/v/conditional-method.svg" alt="PyPi"></a>
 
-  <a href="https://pypi.org/project/conditional-method/">
-    <img src="https://img.shields.io/pypi/v/conditional-method.svg" alt="PyPI version">
-  </a>
-  <a href="https://pypi.org/project/conditional-method/">
-    <img src="https://img.shields.io/pypi/pyversions/conditional-method.svg" alt="Python Versions">
-  </a>
-  <a href="https://github.com/jymchng/conditional-method/blob/main/LICENSE">
-    <img src="https://img.shields.io/pypi/l/conditional-method.svg" alt="License">
-  </a>
-  <a href="https://github.com/jymchng/conditional-method/stargazers">
-    <img src="https://img.shields.io/github/stars/jymchng/conditional-method.svg" alt="GitHub stars">
-  </a>
-  <a href="https://github.com/jymchng/conditional-method/network">
-    <img src="https://img.shields.io/github/forks/jymchng/conditional-method.svg" alt="GitHub forks">
-  </a>
-  <a href="https://github.com/jymchng/conditional-method/issues">
-    <img src="https://img.shields.io/github/issues/jymchng/conditional-method.svg" alt="GitHub issues">
-  </a>
+### CI/CD
+<a href="https://codecov.io/github/jymchng/conditional-method?branch=main"><img src="https://codecov.io/github/jymchng/conditional-method/coverage.svg?branch=main" alt="Coverage"></a>
+
+### License and Issues
+<a href="https://github.com/jymchng/conditional-method/blob/main/LICENSE"><img src="https://img.shields.io/github/license/jymchng/conditional-method" alt="License"></a>
+<a href="https://github.com/jymchng/conditional-method/issues"><img src="https://img.shields.io/github/issues/jymchng/conditional-method" alt="Issues"></a>
+<a href="https://github.com/jymchng/conditional-method/issues?q=is%3Aissue+is%3Aclosed"><img src="https://img.shields.io/github/issues-closed/jymchng/conditional-method" alt="Closed Issues"></a>
+<a href="https://github.com/jymchng/conditional-method/issues?q=is%3Aissue+is%3Aopen"><img src="https://img.shields.io/github/issues-raw/jymchng/conditional-method" alt="Open Issues"></a>
+
+### Development and Quality
+<a href="https://github.com/jymchng/conditional-method/network/members"><img src="https://img.shields.io/github/forks/jymchng/conditional-method" alt="Forks"></a>
+<a href="https://github.com/jymchng/conditional-method/stargazers"><img src="https://img.shields.io/github/stars/jymchng/conditional-method" alt="Stars"></a>
+<a href="https://pypi.python.org/pypi/conditional-method"><img src="https://img.shields.io/pypi/dm/conditional-method" alt="Downloads"></a>
+<a href="https://github.com/jymchng/conditional-method/graphs/contributors"><img src="https://img.shields.io/github/contributors/jymchng/conditional-method" alt="Contributors"></a>
+<a href="https://github.com/jymchng/conditional-method/commits/main"><img src="https://img.shields.io/github/commit-activity/m/jymchng/conditional-method" alt="Commits"></a>
+<a href="https://github.com/jymchng/conditional-method/commits/main"><img src="https://img.shields.io/github/last-commit/jymchng/conditional-method" alt="Last Commit"></a>
+<a href="https://github.com/jymchng/conditional-method"><img src="https://img.shields.io/github/languages/code-size/jymchng/conditional-method" alt="Code Size"></a>
+<a href="https://github.com/jymchng/conditional-method"><img src="https://img.shields.io/github/repo-size/jymchng/conditional-method" alt="Repo Size"></a>
+<a href="https://github.com/jymchng/conditional-method/watchers"><img src="https://img.shields.io/github/watchers/jymchng/conditional-method" alt="Watchers"></a>
+<a href="https://github.com/jymchng/conditional-method"><img src="https://img.shields.io/github/commit-activity/y/jymchng/conditional-method" alt="Activity"></a>
+<a href="https://github.com/jymchng/conditional-method/pulls"><img src="https://img.shields.io/github/issues-pr/jymchng/conditional-method" alt="PRs"></a>
+<a href="https://github.com/jymchng/conditional-method/pulls?q=is%3Apr+is%3Aclosed"><img src="https://img.shields.io/github/issues-pr-closed/jymchng/conditional-method" alt="Merged PRs"></a>
+<a href="https://github.com/jymchng/conditional-method/pulls?q=is%3Apr+is%3Aopen"><img src="https://img.shields.io/github/issues-pr/open/jymchng/conditional-method" alt="Open PRs"></a>
+
 </div>
-<br>
 A powerful Python library that enables conditional method implementation based on runtime, initial conditions, at program startup or latest at class building time, allowing you to define different method implementations that are selected at when your classes are being built according to specific conditions.
 
 ## 🚀 Features
@@ -147,13 +153,13 @@ class DatabaseConnector:
             print("Connecting to production database...")
             # Production-specific connection logic
     
-    elif os.environ.get("ENV") == "development":
+    if os.environ.get("ENV") == "development":
         def connect(self, config):
             """Used in development environment"""
             print("Connecting to development database...")
             # Development-specific connection logic
     
-    else:
+    if not (os.environ.get("ENV") == "development" and os.environ.get("ENV") == "production"):
         def connect(self, config):
             """Used in any other environment"""
             print("Connecting to local/test database...")
@@ -176,60 +182,6 @@ def connect_to_db():
     # Development implementation
     print("Connecting to development database...")
 ```
-
-### `@cfg` can also be applied to classes
-
-```python
-import os
-from conditional_method import conditional_method
-
-# Set environment for demonstration
-os.environ["ENV"] = "production"
-
-@conditional_method(condition=os.environ.get("ENV") == "production")
-class DatabaseConnector:
-    """Production database connector with advanced security features"""
-    
-    def __init__(self, host, port, user, password):
-        self.host = host
-        self.port = port
-        self.user = user
-        self.password = password
-        print("Initializing PRODUCTION database connector")
-        
-    def connect(self):
-        print(f"Connecting to PRODUCTION database at {self.host}:{self.port}")
-        print("Using enhanced security protocols")
-        # Production-specific connection logic
-
-@conditional_method(condition=os.environ.get("ENV") == "development")
-class DatabaseConnector:
-    """Development database connector with debugging capabilities"""
-    
-    def __init__(self, host="localhost", port=5432, user="dev", password="dev"):
-        self.host = host
-        self.port = port
-        self.user = user
-        self.password = password
-        print("Initializing DEVELOPMENT database connector")
-        
-    def connect(self):
-        print(f"Connecting to DEVELOPMENT database at {self.host}:{self.port}")
-        print("Debug mode enabled")
-        # Development-specific connection logic with debug features
-
-# Usage
-if __name__ == "__main__":
-    # Since ENV=production, this will use the production version
-    db = DatabaseConnector("prod-db.example.com", 5432, "app_user", "secure_pwd")
-    db.connect()
-    
-    # If we changed ENV to development before importing:
-    # db = DatabaseConnector()  # Default parameters would work
-    # db.connect()  # Would show debugging output
-```
-
-Note!! But maybe it is easier to place `@conditional_method` decorator on the `def __init__(...)` constructor instead.
 
 # `@cfg_attr` Decorator Usage
 
@@ -282,6 +234,8 @@ Result: Processed: test_input
 ```
 
 Without changing your implementation, you can toggle features on and off or change how they're decorated simply by updating environment variables or other configuration.
+
+When the feature flag is **OFF**, the function becomes un-callable at runtime as it will raise a `TypeError`.
 
 ## 🔍 Debugging
 

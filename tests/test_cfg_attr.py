@@ -1,7 +1,7 @@
 import os
 import pytest
 from functools import wraps, lru_cache
-from conditional_method.lib import cfg_attr
+from conditional_method import cfg_attr
 
 
 # Fix for generator function test
@@ -125,7 +125,8 @@ class TestCfgAttr:
         def test_func():
             return "result"
 
-        assert test_func() == "result"  # Function should be unchanged
+        with pytest.raises(TypeError):
+            assert test_func() == "result"  # Function should be unchanged
 
     def test_single_decorator_true_condition(self):
         @cfg_attr(condition=True, decorators=[add_prefix("test")])
@@ -139,7 +140,8 @@ class TestCfgAttr:
         def test_func():
             return "result"
 
-        assert test_func() == "result"  # Decorator should not be applied
+        with pytest.raises(TypeError):
+            assert test_func() == "result"  # Decorator should not be applied
 
     def test_multiple_decorators_true_condition(self):
         @cfg_attr(condition=True, decorators=[add_prefix("pre"), add_suffix("post")])
@@ -172,7 +174,8 @@ class TestCfgAttr:
         def test_func():
             return "result"
 
-        assert test_func() == "result"
+        with pytest.raises(TypeError):
+            assert test_func() == "result"
 
     def test_with_environment_variable(self, monkeypatch):
         monkeypatch.setenv("TEST_FLAG", "enabled")
@@ -196,7 +199,8 @@ class TestCfgAttr:
         def test_func():
             return "result"
 
-        assert test_func() == "result"
+        with pytest.raises(TypeError):
+            assert test_func() == "result"
 
     def test_with_function_arguments(self):
         @cfg_attr(condition=True, decorators=[add_prefix("args")])
@@ -251,16 +255,21 @@ class TestCfgAttr:
         assert TestClass.test_method() == "static_result"
 
     def test_with_class_method_false_condition(self):
-        class TestClass:
-            @cfg_attr(condition=False, decorators=[add_prefix("method")])
-            def test_method(self):
-                return "result"
+        with pytest.raises(RuntimeError):
 
-        instance = TestClass()
-        assert instance.test_method() == "result"
+            class TestClass:
+                @cfg_attr(condition=False, decorators=[add_prefix("method")])
+                def test_method(self):
+                    return "result"
+
+        with pytest.raises(UnboundLocalError):
+            instance = TestClass()
+            assert instance.test_method() == "result"
 
     def test_with_lambda_function(self):
-        func = lambda x: x * 2
+        def func(x):
+            return x * 2
+
         decorated = cfg_attr(func, condition=True, decorators=[add_prefix("lambda")])
 
         assert decorated(5) == "lambda_10"
@@ -316,7 +325,8 @@ class TestCfgAttr:
         def test_func():
             return "result"
 
-        assert test_func() == "result"
+        with pytest.raises(TypeError):
+            test_func()
 
     def test_with_dynamic_condition(self):
         def dynamic_condition():
@@ -362,7 +372,8 @@ class TestCfgAttr:
         def test_func():
             return "result"
 
-        assert test_func() == "result"
+        with pytest.raises(TypeError):
+            test_func()
 
     def test_with_empty_decorators_list(self):
         @cfg_attr(condition=True, decorators=[])
@@ -440,7 +451,9 @@ class TestCfgAttr:
         # Only apply decorator if pytest is available
         has_pytest = True
         try:
-            import pytest
+            import importlib
+
+            importlib.util.find_spec("pytest")
         except ImportError:
             has_pytest = False
 

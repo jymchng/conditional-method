@@ -5,8 +5,13 @@ build/
 dist/
 wheels/
 *.egg-info
+.pytest_cache/
+*/**/__pycache__/
+*/**/*.so
+*/**/*.pyd
 
 # Virtual environments
 .venv
 # because this is a library, we don't need a lock file
 uv.lock
+dist_logs/
