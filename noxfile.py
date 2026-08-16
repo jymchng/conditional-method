@@ -262,8 +262,8 @@ def clean(session: Session):
         # Windows .pyd files (matches any .pyd extension)
         "**/*.pyd",
         # Specific directories if needed
-        "src/conditional_method/**/*.so",
-        "src/conditional_method/**/*.pyd",
+        "src/cfg/**/*.so",
+        "src/cfg/**/*.pyd",
         # Build directory extensions
         "build/**/*.so",
         "build/**/*.pyd",
@@ -403,7 +403,7 @@ def format(session: Session):
     import glob
 
     # Check if the directory exists before trying to format files
-    c_files_path = "src/conditional_method"
+    c_files_path = "src/cfg"
     if not os.path.exists(c_files_path):
         session.log(f"Directory {c_files_path} does not exist, skipping clang-format")
         return
@@ -432,10 +432,10 @@ def build(session: Session):
     #     "build",
     # ]
     # session.run(*command)
-    # # copy from ./build to ./src/conditional_method/_lib.c
+    # # copy from ./build to ./src/cfg/_lib.c
     # shutil.copy(
     #     "./build/lib.linux-x86_64-cpython-38/_lib.cpython-38-x86_64-linux-gnu.so",
-    #     "./src/conditional_method/_lib.cpython-38-x86_64-linux-gnu.so",
+    #     "./src/cfg/_lib.cpython-38-x86_64-linux-gnu.so",
     # )
     session.run("uv", "build")
 
@@ -534,21 +534,21 @@ def test_client_install_run(session: Session):
         build(session)
     with alter_session(session, dependency_group="dev"):
         list_dist_files(session)
-    session.run("pip", "uninstall", "conditional-method", "-y")
+    session.run("pip", "uninstall", "python-cfg", "-y")
     # Find the tarball with the largest semver version
     import glob
     import re
     from packaging import version
 
     # Get all tarball files
-    tarball_files = glob.glob("dist/conditional_method-*.tar.gz")
+    tarball_files = glob.glob("dist/cfg-*.tar.gz")
 
     if not tarball_files:
         session.error("No tarball files found in dist/ directory")
 
     # Extract version numbers using regex
     version_pattern = re.compile(
-        r"conditional_method-([0-9]+\.[0-9]+\.[0-9]+(?:\.[0-9]+)?(?:(?:a|b|rc)[0-9]+)?(?:\.post[0-9]+)?(?:\.dev[0-9]+)?).tar.gz"
+        r"cfg-([0-9]+\.[0-9]+\.[0-9]+(?:\.[0-9]+)?(?:(?:a|b|rc)[0-9]+)?(?:\.post[0-9]+)?(?:\.dev[0-9]+)?).tar.gz"
     )
 
     # Create a list of (file_path, version) tuples
@@ -577,9 +577,9 @@ def test_client_install_run(session: Session):
         "run",
         "python",
         "-c",
-        "from conditional_method import cfg; print('cfg imported')",
+        "from cfg import cfg; print('cfg imported')",
     )
-    session.run("uv", "run", "pip", "uninstall", "conditional-method", "-y")
+    session.run("uv", "run", "pip", "uninstall", "python-cfg", "-y")
 
     with alter_session(session, dependency_group="test"):
         test(session)

@@ -1,4 +1,4 @@
-from conditional_method import if_, cm
+from cfg import if_, cm
 import os
 
 os.environ["ENV"] = "LOCAL"

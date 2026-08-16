@@ -4,7 +4,7 @@ import pytest
 from functools import wraps, lru_cache
 
 # Import the cfg function
-from conditional_method import cfg, conditional_method, if_
+from cfg import cfg, cfg, if_
 
 
 def add_prefix_to_yielded(prefix):
@@ -287,16 +287,16 @@ def test_cfg_aliases():
     def func1():
         return "cfg"
 
-    @conditional_method(condition=True)
+    @cfg(condition=True)
     def func2():
-        return "conditional_method"
+        return "cfg"
 
     @if_(condition=True)
     def func3():
         return "if_"
 
     assert func1() == "cfg"
-    assert func2() == "conditional_method"
+    assert func2() == "cfg"
     assert func3() == "if_"
 
 
@@ -1375,7 +1375,7 @@ def test_cfg_without_brackets_with_recursive_function():
 def test_conditional_method_without_brackets():
     with pytest.raises(TypeError):
 
-        @conditional_method
+        @cfg
         def test_func():
             return "result"
 
@@ -1405,7 +1405,7 @@ def test_cfg_with_empty_brackets():
 def test_conditional_method_with_empty_brackets():
     with pytest.raises(TypeError):
 
-        @conditional_method()
+        @cfg()
         def test_func():
             return "result"
 
@@ -1825,7 +1825,7 @@ def test_cfg_without_brackets_with_function_factory():
 
 
 def test_cfg_without_brackets_with_decorator_factory():
-    from conditional_method import cm
+    from cfg import cm
 
     _cache = cm._cache
 

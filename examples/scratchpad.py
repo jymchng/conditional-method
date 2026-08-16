@@ -1,5 +1,5 @@
-from conditional_method import cm
-from conditional_method._lib import _cache
+from cfg import cm
+from cfg._lib import _cache
 
 
 class A:

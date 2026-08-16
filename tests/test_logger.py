@@ -3,7 +3,7 @@ import logging
 from unittest.mock import patch, MagicMock
 
 # Direct import to test the logger itself
-from conditional_method._logger import (
+from cfg._logger import (
     ENV_KEY_TO_ACTIVATE_DEBUG_LOGGER,
 )
 
@@ -21,12 +21,12 @@ class TestLogger:
 
             # Re-import to get fresh instance with clean environment
             import importlib
-            import conditional_method._logger
+            import cfg._logger
 
-            importlib.reload(conditional_method._logger)
+            importlib.reload(cfg._logger)
 
             # Check if the logger is a NoopLogger
-            from conditional_method._logger import logger
+            from cfg._logger import logger
 
             assert not logger  # NoopLogger should return False in bool context
 
@@ -54,19 +54,19 @@ class TestLogger:
 
             # Re-import to get fresh instance with the environment variable set
             import importlib
-            import conditional_method._logger
+            import cfg._logger
 
-            importlib.reload(conditional_method._logger)
+            importlib.reload(cfg._logger)
 
             # Get logger after reload
-            from conditional_method._logger import logger
+            from cfg._logger import logger
 
             # The real logger should evaluate to True in a bool context
             assert logger
 
             # Check that it's a real logging.Logger instance
             assert isinstance(logger, logging.Logger)
-            assert logger.name == "conditional_method"
+            assert logger.name == "cfg"
 
         finally:
             # Restore environment
@@ -91,12 +91,12 @@ class TestLogger:
 
             # Re-import to get fresh instance with the environment variable set
             import importlib
-            import conditional_method._logger
+            import cfg._logger
 
-            importlib.reload(conditional_method._logger)
+            importlib.reload(cfg._logger)
 
             # Verify getLogger was called with correct name
-            mock_get_logger.assert_called_once_with("conditional_method")
+            mock_get_logger.assert_called_once_with("cfg")
 
         finally:
             # Restore environment

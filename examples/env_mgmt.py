@@ -1,4 +1,4 @@
-from conditional_method import conditional_method
+from cfg import cfg
 
 import os
 
@@ -11,21 +11,21 @@ ENVIRONMENT = os.environ[ENVIRONMENT_KEY]
 class Worker:
     __slots__ = ()
 
-    @conditional_method(condition=ENVIRONMENT == "production")
+    @cfg(condition=ENVIRONMENT == "production")
     def work(self, *args, **kwargs):
         print("Working in production")
         print(f"Args: {args}")
         print(f"Kwargs: {kwargs}")
         return "production"
 
-    @conditional_method(condition=ENVIRONMENT == "development")
+    @cfg(condition=ENVIRONMENT == "development")
     def work(self, *args, **kwargs):
         print("Working in development")
         print(f"Args: {args}")
         print(f"Kwargs: {kwargs}")
         return "development"
 
-    @conditional_method(condition=ENVIRONMENT == "staging")
+    @cfg(condition=ENVIRONMENT == "staging")
     def work(self, *args, **kwargs):
         print("Working in staging")
         print(f"Args: {args}")
@@ -36,21 +36,21 @@ class Worker:
 class WorkerTwo:
     __slots__ = ()
 
-    @conditional_method(condition=ENVIRONMENT == "production")
+    @cfg(condition=ENVIRONMENT == "production")
     def work(self, *args, **kwargs):
         print("WorkerTwo: Working in production")
         print(f"Args: {args}")
         print(f"Kwargs: {kwargs}")
         return "production"
 
-    @conditional_method(condition=ENVIRONMENT == "development")
+    @cfg(condition=ENVIRONMENT == "development")
     def work(self, *args, **kwargs):
         print("WorkerTwo: Working in development")
         print(f"Args: {args}")
         print(f"Kwargs: {kwargs}")
         return "development"
 
-    @conditional_method(condition=ENVIRONMENT == "staging")
+    @cfg(condition=ENVIRONMENT == "staging")
     def work(self, *args, **kwargs):
         print("WorkerTwo: Working in staging")
         print(f"Args: {args}")

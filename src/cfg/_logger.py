@@ -44,4 +44,4 @@ def logger() -> "Logger":
     logging.basicConfig(
         level=logging.DEBUG, format="%(name)s - %(levelname)s - %(message)s"
     )
-    return logging.getLogger("conditional_method")
+    return logging.getLogger("cfg")

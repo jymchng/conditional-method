@@ -1,6 +1,6 @@
 import os
 import pytest
-from conditional_method import conditional_method
+from cfg import cfg
 
 
 @pytest.fixture(autouse=True)
@@ -25,24 +25,24 @@ class TestConditionalMethods:
 
             __slots__ = ()
 
-            @conditional_method(condition=True)
+            @cfg(condition=True)
             def monday(self):
                 return "Instance of A " + "A::Monday"
 
-            @conditional_method(
+            @cfg(
                 condition=lambda f: os.environ.get("DEBUG", "False") == "False"
             )
             def monday(self):
                 return "Instance of A " + "A::Another Monday"
 
-            @conditional_method(
+            @cfg(
                 condition=lambda f: os.environ.get("DEBUG", "False") == "True"
             )
             @classmethod
             def monday(cls):
                 return "Class of A " + "A::Yet Another Monday"
 
-            @conditional_method(
+            @cfg(
                 condition=lambda f: os.environ.get("DEBUG", "False") == "True"
             )  # this is ignored
             @staticmethod
@@ -72,19 +72,19 @@ class TestConditionalMethods:
 
             __slots__ = ()
 
-            @conditional_method(
+            @cfg(
                 condition=lambda f: os.environ.get("DEBUG", "False") == "False"
             )
             def monday(self):
                 return "Instance of B" + "B::Monday"
 
-            @conditional_method(
+            @cfg(
                 condition=lambda f: os.environ.get("DEBUG", "False") == "True"
             )
             def monday(self):
                 return "Instance of B" + "B::Another Monday"
 
-            @conditional_method(
+            @cfg(
                 condition=lambda f: os.environ.get("DEBUG", "False") == "False"
             )
             def monday(self):
@@ -113,20 +113,20 @@ class TestConditionalMethods:
 
             __slots__ = ()
 
-            @conditional_method(
+            @cfg(
                 condition=lambda f: os.environ.get("DEBUG", "False") == "False"
             )
             def monday(self):
                 return "Instance of C" + "C::Monday"
 
-            @conditional_method(
+            @cfg(
                 condition=lambda f: os.environ.get("DEBUG", "False") == "True"
             )
             @staticmethod
             def monday():
                 return "Staticmethod of C" + "C::Another Monday"
 
-            @conditional_method(
+            @cfg(
                 condition=lambda f: os.environ.get("DEBUG", "False") == "False"
             )
             def monday(self):
@@ -155,13 +155,13 @@ class TestConditionalMethods:
 
             __slots__ = ()
 
-            @conditional_method(
+            @cfg(
                 condition=lambda f: os.environ.get("DEBUG", "False") == "False"
             )
             def monday(self):
                 return "Instance of D" + "D::Monday"
 
-            @conditional_method(
+            @cfg(
                 condition=lambda f: os.environ.get("DEBUG", "False") == "True"
             )
             def monday(self):
@@ -205,21 +205,21 @@ class TestConditionalMethods:
         with pytest.raises(RuntimeError) as excinfo:
 
             class AllFalseMethods:
-                @conditional_method(condition=False)
+                @cfg(condition=False)
                 def method1(self):
                     return "This should not be used"
 
-                @conditional_method(condition=False)
+                @cfg(condition=False)
                 def method2(self):
                     return "This should not be used either"
 
-                @conditional_method(condition=False)
+                @cfg(condition=False)
                 def method3(self):
                     return "This should not be used as well"
 
         # Check that the error message mentions the condition issue
         assert (
-            # "Error calling __set_name__ on 'conditional_method._TypeErrorRaiser' instance 'method1' in 'AllFalseMethods'"
+            # "Error calling __set_name__ on 'cfg._TypeErrorRaiser' instance 'method1' in 'AllFalseMethods'"
             "Error calling __set_name__ on '_TypeErrorRaiser' instance 'method1' in 'AllFalseMethods'"
             in str(excinfo.value)
         )

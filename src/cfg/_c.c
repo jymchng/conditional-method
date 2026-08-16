@@ -194,7 +194,7 @@ static PyMethodDef TypeErrorRaiser_methods[] = {
 
 static PyTypeObject TypeErrorRaiserType = {
     PyVarObject_HEAD_INIT(NULL, 0).tp_name =
-        "conditional_method._TypeErrorRaiser",
+        "cfg._TypeErrorRaiser",
     .tp_doc = "Type error raiser for conditional methods",
     .tp_basicsize = sizeof(TypeErrorRaiserObject),
     .tp_itemsize = 0,
@@ -654,16 +654,18 @@ static PyObject *cfg_attr(PyObject *self, PyObject *args, PyObject *kwargs) {
 
 /* Define the methods of the module */
 static PyMethodDef ConditionalMethodMethods[] = {
-    {"_raise_exec", _raise_exec, METH_VARARGS | METH_KEYWORDS,
+    {"_raise_exec", (PyCFunction)(void (*)(void))_raise_exec,
+     METH_VARARGS | METH_KEYWORDS,
      "Create a TypeErrorRaiser instance."},
     {"_get_func_name", _get_func_name, METH_O,
      "Get the fully qualified name of a function."},
-    {"cm", cm, METH_VARARGS | METH_KEYWORDS,
+    {"cm", (PyCFunction)(void (*)(void))cm, METH_VARARGS | METH_KEYWORDS,
      "Conditionally select function implementations based on a runtime "
      "condition."},
     {"_cm_inner", _cm_inner, METH_VARARGS,
      "Inner implementation of the conditional method decorator."},
-    {"cfg_attr", cfg_attr, METH_VARARGS | METH_KEYWORDS,
+    {"cfg_attr", (PyCFunction)(void (*)(void))cfg_attr,
+     METH_VARARGS | METH_KEYWORDS,
      "Conditionally apply a chain of decorators to a function."},
     {NULL, NULL, 0, NULL} /* Sentinel */
 };
@@ -671,7 +673,7 @@ static PyMethodDef ConditionalMethodMethods[] = {
 /* Module definition */
 static struct PyModuleDef conditionalmodule = {
     PyModuleDef_HEAD_INIT,
-    "_lib",                                /* m_name */
+    "_c",                                   /* m_name */
     "Conditional method decorator module", /* m_doc */
     -1,                                    /* m_size */
     ConditionalMethodMethods,              /* m_methods */
@@ -682,7 +684,7 @@ static struct PyModuleDef conditionalmodule = {
 };
 
 /* Module initialization function */
-PyMODINIT_FUNC PyInit__lib(void) {
+PyMODINIT_FUNC PyInit__c(void) {
   /* Initialize the module */
   PyObject *m = PyModule_Create(&conditionalmodule);
   if (m == NULL) {
@@ -703,7 +705,12 @@ PyMODINIT_FUNC PyInit__lib(void) {
     return NULL;
   }
 
-  /* Add the cache to the module */
+  /* Create and add the module-level cache */
+  _cache = PyDict_New();
+  if (_cache == NULL) {
+    Py_DECREF(m);
+    return NULL;
+  }
   if (PyModule_AddObject(m, "_cache", _cache) < 0) {
     Py_DECREF(_cache);
     Py_DECREF(m);

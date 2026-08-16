@@ -162,7 +162,7 @@ def _cm_impl():
         Example:
         ```python
         import pytest
-        from conditional_method import cfg
+        from cfg import cfg
 
         @cfg(condition=lambda f: f.__name__.startswith("test_"))
         def test_func():
@@ -180,7 +180,7 @@ def _cm_impl():
         """
         if condition is None:
             raise TypeError(
-                "`@conditional_method` must be used as a decorator and `condition` must be specified as an instance of type `bool`"
+                "`@cfg` must be used as a decorator and `condition` must be specified as an instance of type `bool`"
             )
 
         def cm_inner(f):

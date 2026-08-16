@@ -56,25 +56,25 @@ class TestDebugMode:
             import importlib
 
             # Clear any existing imports
-            if "conditional_method" in sys.modules:
-                del sys.modules["conditional_method"]
-            if "conditional_method._logger" in sys.modules:
-                del sys.modules["conditional_method._logger"]
+            if "cfg" in sys.modules:
+                del sys.modules["cfg"]
+            if "cfg._logger" in sys.modules:
+                del sys.modules["cfg._logger"]
 
             # Force reload with new environment
-            import conditional_method._logger
+            import cfg._logger
 
-            importlib.reload(conditional_method._logger)
+            importlib.reload(cfg._logger)
 
             # Trigger log message
-            from conditional_method._logger import logger
+            from cfg._logger import logger
 
             logger.debug("This is a test debug message")
 
             # Check captured output
             log_output = configure_logging.getvalue()
             assert "This is a test debug message" in log_output
-            assert "conditional_method - DEBUG" in log_output
+            assert "cfg - DEBUG" in log_output
 
         finally:
             # Restore original value
@@ -97,18 +97,18 @@ class TestDebugMode:
             import importlib
 
             # Clear any existing imports
-            if "conditional_method" in sys.modules:
-                del sys.modules["conditional_method"]
-            if "conditional_method._logger" in sys.modules:
-                del sys.modules["conditional_method._logger"]
+            if "cfg" in sys.modules:
+                del sys.modules["cfg"]
+            if "cfg._logger" in sys.modules:
+                del sys.modules["cfg._logger"]
 
             # Force reload with new environment
-            import conditional_method._logger
+            import cfg._logger
 
-            importlib.reload(conditional_method._logger)
+            importlib.reload(cfg._logger)
 
             # Trigger log message
-            from conditional_method._logger import logger
+            from cfg._logger import logger
 
             # Clear capture buffer
             configure_logging.truncate(0)
@@ -132,7 +132,7 @@ class TestDebugMode:
 
     def test_debug_mode_in_conditional_methods(self, configure_logging):
         """Test that debug logs appear when using conditional methods"""
-        from conditional_method import conditional_method
+        from cfg import cfg
 
         # Store original value
         original_value = os.environ.get("__conditional_method_debug__", None)
@@ -145,17 +145,17 @@ class TestDebugMode:
             import importlib
 
             # Clear any existing imports related to logger
-            if "conditional_method._logger" in sys.modules:
-                del sys.modules["conditional_method._logger"]
+            if "cfg._logger" in sys.modules:
+                del sys.modules["cfg._logger"]
 
             # Force reload with new environment
-            import conditional_method._logger as logger
+            import cfg._logger as logger
 
             importlib.reload(logger)
 
             # Define a test class using conditional methods
             class TestClass:
-                @conditional_method(condition=True)
+                @cfg(condition=True)
                 def test_method(self):
                     logger.logger.debug("This is a test debug message")
                     return "TestClass::test_method"

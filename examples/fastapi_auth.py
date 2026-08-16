@@ -1,4 +1,4 @@
-from conditional_method import conditional_method
+from cfg import cfg
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import os
@@ -48,7 +48,7 @@ def is_development(f):
 class AuthService:
     """Service handling authentication logic with different implementations per environment"""
 
-    @conditional_method(condition=is_production)
+    @cfg(condition=is_production)
     def authenticate_user(
         self, authorization: HTTPAuthorizationCredentials = Depends(security)
     ) -> Dict[str, Any]:
@@ -83,7 +83,7 @@ class AuthService:
                 detail="Invalid authentication credentials",
             )
 
-    @conditional_method(condition=is_development)
+    @cfg(condition=is_development)
     def authenticate_user(
         self, authorization: Optional[HTTPAuthorizationCredentials] = Depends(security)
     ) -> Dict[str, Any]:
@@ -116,7 +116,7 @@ class AuthService:
             # Catch any other exceptions and return default test user
             return {"sub": "test_user", "role": "developer"}
 
-    @conditional_method(condition=is_staging)
+    @cfg(condition=is_staging)
     def authenticate_user(
         self, authorization: HTTPAuthorizationCredentials = Depends(security)
     ) -> Dict[str, Any]:
