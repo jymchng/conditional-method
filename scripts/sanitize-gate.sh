@@ -17,7 +17,7 @@ cd "$(dirname "$0")/.."
 SAN_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer -O1"
 
 # 1. Clean stale artifacts and rebuild with the sanitizers + fault injection.
-rm -f src/cfg/_c.abi3.so
+rm -f src/conditional_method/_c.abi3.so
 rm -rf build
 
 echo "==> Building cfg._c with ASan/UBSan + PY_CFG_TESTING"

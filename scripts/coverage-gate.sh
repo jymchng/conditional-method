@@ -3,7 +3,7 @@
 #
 # Builds the extension with coverage instrumentation + the PY_CFG_TESTING
 # fault-injection hooks, runs the full test suite, produces the gcov report
-# for src/cfg/_c.c and fails if the line coverage is below the threshold.
+# for src/conditional_method/_c.c and fails if the line coverage is below the threshold.
 #
 # Usage: scripts/coverage-gate.sh [threshold]   (default threshold: 90.0)
 set -euo pipefail
@@ -15,7 +15,7 @@ THRESHOLD="${1:-90.0}"
 # 1. Clean stale build artifacts and rebuild with coverage + fault injection.
 #    `build/` must go entirely: setuptools treats build/lib/.../*.so newer than
 #    the source as "up to date" and would skip recompiling, leaving no .gcno.
-rm -f src/cfg/_c.abi3.so
+rm -f src/conditional_method/_c.abi3.so
 rm -rf build
 
 echo "==> Building cfg._c with --coverage + PY_CFG_TESTING"
@@ -27,11 +27,11 @@ echo "==> Running test suite"
 uv run --group test python -m pytest tests -q
 
 # 3. Produce the gcov report for _c.c. The per-file summary line is printed
-#    to stdout right after "File 'src/cfg/_c.c'".
+#    to stdout right after "File 'src/conditional_method/_c.c'".
 echo "==> Generating gcov report"
 rm -f _c.c.gcov
-GCOV_OUT=$(gcov -o build/temp.*/src/cfg src/cfg/_c.c 2>&1 || true)
-echo "$GCOV_OUT" | grep -E "^File 'src/cfg/_c.c'|^Lines executed" || true
+GCOV_OUT=$(gcov -o build/temp.*/src/conditional_method src/conditional_method/_c.c 2>&1 || true)
+echo "$GCOV_OUT" | grep -E "^File 'src/conditional_method/_c.c'|^Lines executed" || true
 
 if [ ! -f _c.c.gcov ]; then
   echo "ERROR: gcov report _c.c.gcov not produced" >&2
@@ -39,9 +39,9 @@ if [ ! -f _c.c.gcov ]; then
   exit 1
 fi
 
-# 4. Parse "Lines executed:XX.XX% of NNN" that follows "File 'src/cfg/_c.c'".
+# 4. Parse "Lines executed:XX.XX% of NNN" that follows "File 'src/conditional_method/_c.c'".
 SUMMARY=$(echo "$GCOV_OUT" | awk '
-  /^File .*src\/cfg\/_c.c/ { want=1; next }
+  /^File .*src\/conditional_method\/_c.c/ { want=1; next }
   want && /^Lines executed:[0-9.]+% of [0-9]+/ { print; exit }
 ')
 if [ -z "$SUMMARY" ]; then
