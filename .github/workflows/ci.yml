@@ -66,3 +66,17 @@ jobs:
         run: gcov --version | head -1
       - name: Run C coverage gate
         run: bash scripts/coverage-gate.sh
+
+  sanitizers:
+    name: Sanitizers (ASan/UBSan)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.13"
+          enable-cache: true
+      - name: Check libasan availability
+        run: cc -print-file-name=libasan.so
+      - name: Run ASan/UBSan gate
+        run: bash scripts/sanitize-gate.sh
