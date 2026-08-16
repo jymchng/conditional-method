@@ -549,14 +549,14 @@ def test_client_install_run(session: Session):
     from packaging import version
 
     # Get all tarball files
-    tarball_files = glob.glob("dist/cfg-*.tar.gz")
+    tarball_files = glob.glob("dist/python_cfg-*.tar.gz")
 
     if not tarball_files:
         session.error("No tarball files found in dist/ directory")
 
     # Extract version numbers using regex
     version_pattern = re.compile(
-        r"cfg-([0-9]+\.[0-9]+\.[0-9]+(?:\.[0-9]+)?(?:(?:a|b|rc)[0-9]+)?(?:\.post[0-9]+)?(?:\.dev[0-9]+)?).tar.gz"
+        r"python_cfg-([0-9]+\.[0-9]+\.[0-9]+(?:\.[0-9]+)?(?:(?:a|b|rc)[0-9]+)?(?:\.post[0-9]+)?(?:\.dev[0-9]+)?).tar.gz"
     )
 
     # Create a list of (file_path, version) tuples

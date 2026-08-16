@@ -1,6 +1,6 @@
 import os
 from functools import wraps
-from cfg._py_lib import cfg, cfg_attr
+from cfg import cfg, cfg_attr
 
 
 # Example decorators to use with cfg_attr
@@ -107,7 +107,7 @@ if __name__ == "__main__":
         print("--- Running again to test cache ---")
         result = experimental_feature("test_input")
         print(f"Result: {result}")
-    except RuntimeError as e:
+    except TypeError as e:
         print(f"Feature not available: {e}\n")
 
     print("--- Example 4: Class method conditional implementation ---")

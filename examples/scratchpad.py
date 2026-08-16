@@ -1,5 +1,4 @@
 from cfg import cm
-from cfg._lib import _cache
 
 
 class A:
@@ -28,55 +27,13 @@ class A:
         print("A::hello True 2")
 
 
-print("_cache: ", _cache)
-
-
-class B:
-    @cm(condition=True)
-    @property
-    def hello(self):
-        print("B::hello; False")
-
-    @cm(condition=False)
-    def hello(self):
-        print("B::hello; True")
-
-    @cm(condition=False)
-    def hello(self):
-        print("B::hello; False 2")
-
-    @cm(condition=False)
-    def bye(self):
-        print("B::bye; True")
-
-    @cm(condition=True)
-    def bye(self):
-        print("B::bye; True 2")
-
-    @cm(condition=True)
-    @hello.setter
-    def hello(self, value):
-        print(f"B::hello.setter One; value = {value}")
-
-    @cm(condition=False)
-    @hello.setter
-    def hello(self, value):
-        print(f"B::hello.setter Two; value = {value}")
-
-
-print("_cache: ", _cache)
+print("cm._cache: ", cm._cache)
 
 A().hello()
 A().bye()
-print("_cache: ", _cache)
+print("cm._cache: ", cm._cache)
 
-print(B.__dict__)
-
-b = B()
-b.hello = 69
-b.hello
-b.bye()
-print("_cache: ", _cache)
+print(A.__dict__)
 
 
 @cm(condition=False)
@@ -85,7 +42,7 @@ class Person:
         print("Person::hello One")
 
 
-print("_cache: ", _cache)
+print("cm._cache: ", cm._cache)
 
 
 @cm(condition=True)
@@ -94,8 +51,8 @@ class Person:
         print("Person::hello Two")
 
 
-print("_cache: ", _cache)
+print("cm._cache: ", cm._cache)
 
 
 Person().hello()
-print("_cache: ", _cache)
+print("cm._cache: ", cm._cache)

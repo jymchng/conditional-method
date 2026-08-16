@@ -4,9 +4,8 @@ The core implementation of ``python-cfg`` is a C extension (``cfg._c``)
 built with the Limited API / Stable ABI (abi3) so a single ``cp39-abi3``
 wheel covers CPython 3.9+.
 
-The pure-Python reference implementation lives in ``cfg._py_lib`` and is
-used as a fallback when the extension is not built (e.g. source checkouts
-without a compiler).
+There is no pure-Python implementation: ``cfg`` is an import shim over the
+C extension only.
 """
 
 import sys
