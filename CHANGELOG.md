@@ -7,30 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-- CI coverage gate (`scripts/coverage-gate.sh`): builds `cfg._c` with gcov
-  coverage + `PY_CFG_TESTING`, runs the suite, and fails if `src/cfg/_c.c`
-  line coverage drops below 90%.
-- CI sanitizer gate (`scripts/sanitize-gate.sh`): runs the full suite under
-  ASan/UBSan with `abort_on_error`/`halt_on_error` so any report fails CI.
-- Many-arch abi3 wheel workflow (`wheels.yml`): cibuildwheel matrix
-  (linux x86_64/aarch64/i686/ppc64le/s390x/armv7l, macos arm64/x86_64,
-  windows AMD64/ARM64/x86), each producing a single `cp39-abi3` wheel;
-  artifacts are tag-checked and smoke-tested (`scripts/smoke_wheel.py`).
-- GitHub Pages workflow (`pages.yml`): builds the MkDocs+Material site and
-  deploys it to GitHub Pages when enabled.
-- `tests/test_alloc_fail.py`: deterministic allocation-failure / error-path
-  coverage for the C module (raises C line coverage past 90%).
-
-### Changed
-- CPython 3.9–3.14 cross-version support: `tests/_compat.py` handles the
-  `<3.12` `__set_name__` `RuntimeError` wrapping vs `3.12+` `TypeError`,
-  and the `<3.11` `AttributeError` vs `3.11+` `TypeError`
-  context-manager-protocol difference.
-- README rewritten in a FastAPI-style layout with logo, badges, and
-  quick examples.
-
-## [0.2.0.dev] - unreleased
+## [0.2.0] - 2026-08-16
 
 ### Added
 - Pure-C implementation: `cfg._c` (a CPython C extension) replaces the
@@ -46,6 +23,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   makes guarded allocations fail deterministically for OOM-path coverage.
 - Benchmarks: `tests/benchmark.py` (pytest-benchmark) and
   `benchmarks/bench.py` (standalone timeit harness → `results.json`).
+- CI coverage gate (`scripts/coverage-gate.sh`): builds `cfg._c` with gcov
+  coverage + `PY_CFG_TESTING`, runs the suite, and fails if `src/cfg/_c.c`
+  line coverage drops below 90%.
+- CI sanitizer gate (`scripts/sanitize-gate.sh`): runs the full suite under
+  ASan/UBSan with `abort_on_error`/`halt_on_error` so any report fails CI.
+- Many-arch abi3 wheel workflow (`wheels.yml`): cibuildwheel matrix
+  (linux x86_64/aarch64/i686/ppc64le/s390x/armv7l, macos arm64/x86_64,
+  windows AMD64/ARM64/x86), each producing a single `cp39-abi3` wheel;
+  artifacts are tag-checked and smoke-tested (`scripts/smoke_wheel.py`).
+- GitHub Pages workflow (`pages.yml`): builds the MkDocs+Material site and
+  deploys it to GitHub Pages when enabled.
+- Release workflow (`release.yml`): sdist + full wheel matrix + GitHub
+  Release + PyPI trusted publishing.
+- `tests/test_alloc_fail.py`: deterministic allocation-failure / error-path
+  coverage for the C module (raises C line coverage past 90%).
+- `tests/test_property.py`: 13 hypothesis property tests asserting parity
+  with a plain-Python reference model (caught and fixed a real cfg_attr
+  empty-decorator cache bug).
 
 ### Changed
 - Project renamed from `conditional-method` to **`python-cfg`**;
@@ -54,6 +49,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   tests and `CFG_ALLOC_TEST_FAIL()` test-only reachability hooks.
 - Modernized tests for current CPython (`RuntimeError` → `TypeError`
   where the interpreter changed).
+- CPython 3.9–3.14 cross-version support: `tests/_compat.py` handles the
+  `<3.12` `__set_name__` `RuntimeError` wrapping vs `3.12+` `TypeError`,
+  and the `<3.11` `AttributeError` vs `3.11+` `TypeError`
+  context-manager-protocol difference.
+- README rewritten in a FastAPI-style layout with logo, badges, and
+  quick examples.
+- Production docs: MkDocs+Material site (12 pages), CHANGELOG, SECURITY.
 
 ### Removed
 - Pure-Python implementation files (`_py_lib.py`, `_logger.py`).
