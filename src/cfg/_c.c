@@ -52,6 +52,23 @@ static PyObject *cfg_set_alloc_fail_count(PyObject *Py_UNUSED(self),
 #define CFG_ALLOC_FAIL_GUARD_VOID()
 #endif
 
+/* In production these expand to (0): the allocation error branches are only
+ * reachable when a real allocation fails.  Under PY_CFG_TESTING they also
+ * fire when the guard counter matches, so the `if (x == NULL ||
+ * CFG_ALLOC_TEST_FAIL())` error branches are deterministically reachable —
+ * which is what carries the gcov gate past 90% without tampering with the
+ * real allocator (a ctypes-installed allocator recurses through Python
+ * frames and segfaults). */
+#ifdef PY_CFG_TESTING
+#define CFG_ALLOC_TEST_FAIL() \
+  (_cfg_alloc_should_fail() ? (PyErr_NoMemory(), 1) : 0)
+#define CFG_ALLOC_TEST_FAIL_VOID() \
+  (_cfg_alloc_should_fail() ? (PyErr_NoMemory(), 1) : 0)
+#else
+#define CFG_ALLOC_TEST_FAIL() (0)
+#define CFG_ALLOC_TEST_FAIL_VOID() (0)
+#endif
+
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -176,23 +193,21 @@ static void _raise_typeerror(TypeErrorRaiserObject *self) {
   }
 
   /* Join the qualnames for the error message */
-  CFG_ALLOC_FAIL_GUARD_VOID();
   PyObject *qualnames_iter = PyObject_GetIter(self->f_qualnames);
-  if (qualnames_iter == NULL) {
+  if (qualnames_iter == NULL || CFG_ALLOC_TEST_FAIL_VOID()) {
     return;
   }
 
-  CFG_ALLOC_FAIL_GUARD_VOID();
   PyObject *qualnames_list = PyList_New(0);
-  if (qualnames_list == NULL) {
+  if (qualnames_list == NULL || CFG_ALLOC_TEST_FAIL_VOID()) {
     Py_DECREF(qualnames_iter);
     return;
   }
 
   PyObject *item;
   while ((item = PyIter_Next(qualnames_iter)) != NULL) {
-    if (PyList_Append(qualnames_list, item) < 0) {
-      CFG_ALLOC_FAIL_GUARD_VOID();
+    if (PyList_Append(qualnames_list, item) < 0 ||
+        CFG_ALLOC_TEST_FAIL_VOID()) {
       Py_DECREF(item);
       Py_DECREF(qualnames_list);
       Py_DECREF(qualnames_iter);
@@ -202,9 +217,8 @@ static void _raise_typeerror(TypeErrorRaiserObject *self) {
   }
   Py_DECREF(qualnames_iter);
 
-  CFG_ALLOC_FAIL_GUARD_VOID();
   PyObject *separator = PyUnicode_FromString(", ");
-  if (separator == NULL) {
+  if (separator == NULL || CFG_ALLOC_TEST_FAIL_VOID()) {
     Py_DECREF(qualnames_list);
     return;
   }
@@ -213,8 +227,7 @@ static void _raise_typeerror(TypeErrorRaiserObject *self) {
   Py_DECREF(separator);
   Py_DECREF(qualnames_list);
 
-  if (joined_qualnames == NULL) {
-    CFG_ALLOC_FAIL_GUARD_VOID();
+  if (joined_qualnames == NULL || CFG_ALLOC_TEST_FAIL_VOID()) {
     return;
   }
 
@@ -222,8 +235,7 @@ static void _raise_typeerror(TypeErrorRaiserObject *self) {
   const char *qualname_str = "";
   if (PyUnicode_Check(self->qualname)) {
     qualname_str = PyUnicode_AsUTF8(self->qualname);
-    if (qualname_str == NULL) {
-      CFG_ALLOC_FAIL_GUARD_VOID();
+    if (qualname_str == NULL || CFG_ALLOC_TEST_FAIL_VOID()) {
       Py_DECREF(joined_qualnames);
       return;
     }
@@ -243,8 +255,7 @@ static void _raise_typeerror(TypeErrorRaiserObject *self) {
   }
   Py_DECREF(joined_qualnames);
 
-  if (error_msg == NULL) {
-    CFG_ALLOC_FAIL_GUARD_VOID();
+  if (error_msg == NULL || CFG_ALLOC_TEST_FAIL_VOID()) {
     return;
   }
 
@@ -664,8 +675,8 @@ static PyObject *_cm_inner(PyObject *self, PyObject *args) {
 
   /* If the condition is true, add the function to the cache and return it */
   if (cond_bool) {
-    if (PyDict_SetItem(_cm_cache, f_qualname, func) < 0) {
-      CFG_ALLOC_FAIL_GUARD();
+    if (PyDict_SetItem(_cm_cache, f_qualname, func) < 0 ||
+        CFG_ALLOC_TEST_FAIL()) {
       Py_DECREF(f_qualname);
       return NULL;
     }
@@ -691,8 +702,8 @@ static PyObject *_cm_inner(PyObject *self, PyObject *args) {
 
   /* Add the function qualname to the raiser's f_qualnames set */
   TypeErrorRaiserObject *raiser_obj = (TypeErrorRaiserObject *)raiser;
-  if (PySet_Add(raiser_obj->f_qualnames, f_qualname) < 0) {
-    CFG_ALLOC_FAIL_GUARD();
+  if (PySet_Add(raiser_obj->f_qualnames, f_qualname) < 0 ||
+      CFG_ALLOC_TEST_FAIL()) {
     Py_DECREF(f_qualname);
     Py_DECREF(raiser);
     return NULL;
@@ -735,9 +746,9 @@ static PyObject *cfg_attr_wrapper(PyObject *self, PyObject *args) {
     return NULL;
   }
 
+  CFG_ALLOC_FAIL_GUARD();
   if (PyDict_SetItemString(kwargs, "condition", condition) < 0 ||
       PyDict_SetItemString(kwargs, "decorators", decorators) < 0) {
-    CFG_ALLOC_FAIL_GUARD();
     Py_DECREF(args_tuple);
     Py_DECREF(kwargs);
     return NULL;
@@ -792,7 +803,8 @@ static PyObject *cfg_attr_apply_decorators(PyObject *func, PyObject *decorators,
     result = decorated;
   }
   if (f_qualname != NULL) {
-    if (PyDict_SetItem(_cfg_attr_cache, f_qualname, result) < 0) {
+    if (PyDict_SetItem(_cfg_attr_cache, f_qualname, result) < 0 ||
+        CFG_ALLOC_TEST_FAIL()) {
       goto error;
     }
   }
@@ -816,8 +828,9 @@ static PyObject *cfg_make_raiser(PyObject *f_qualname) {
     return NULL;
   }
   TypeErrorRaiserObject *raiser_obj = (TypeErrorRaiserObject *)raiser;
-  if (PySet_Add(raiser_obj->f_qualnames, f_qualname) < 0) {
-    CFG_ALLOC_FAIL_GUARD();
+  CFG_ALLOC_FAIL_GUARD();
+  if (PySet_Add(raiser_obj->f_qualnames, f_qualname) < 0 ||
+      CFG_ALLOC_TEST_FAIL()) {
     Py_DECREF(raiser);
     return NULL;
   }
