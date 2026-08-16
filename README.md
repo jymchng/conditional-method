@@ -20,7 +20,7 @@
 
 ---
 
-A decorator `@cfg` (aliases: `@if_`, `@cm`, `@conditional_method`) that selects a
+A decorator `@cfg` (aliases: `@cm`, `@if_`) that selects a
 method implementation among those that are identically named on a class — during
 class build time. Only the selected method remains in the class attributes, i.e.
 the class is *well-formed*. The same decorators also work on module-level
@@ -36,7 +36,7 @@ functions and on classes themselves.
   condition is true.
 - **Type-safe** — ships `py.typed` and a stable public API.
 - **Zero runtime dependencies**.
-- **Fast** — the entire implementation is a C extension (`cfg._c`) built
+- **Fast** — the entire implementation is a C extension (`conditional_method._c`) built
   against the Python Limited API (abi3): a single `cp39-abi3` wheel covers
   CPython 3.9–3.14.
 - **Debuggable** — optional debug logging for troubleshooting.
@@ -65,7 +65,7 @@ Successfully installed conditional-method
 ```python
 import os
 
-from cfg import cfg
+from conditional_method import conditional_method
 
 ENVIRONMENT = os.environ.get("ENV", "development")
 
@@ -98,7 +98,7 @@ print(Worker.__dict__)
 ```python
 import os
 
-from cfg import cfg
+from conditional_method import conditional_method
 
 
 class DatabaseConnector:
@@ -121,7 +121,7 @@ true wins.
 ```python
 import os
 
-from cfg import cfg_attr
+from conditional_method import cfg_attr
 
 os.environ["FEATURE_FLAG"] = "enabled"
 

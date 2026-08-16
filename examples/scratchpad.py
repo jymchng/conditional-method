@@ -1,4 +1,4 @@
-from cfg import cm
+from conditional_method import cm
 
 
 class A:

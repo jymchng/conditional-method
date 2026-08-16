@@ -1,38 +1,14 @@
-"""conditional-method: conditional method/decorator selection.
+"""Deprecated compatibility alias for ``conditional_method``.
 
-Public API::
-
-    from cfg import cm, cfg, if_, conditional_method, cfg_attr
-
-The entire implementation is a C extension module (``cfg._c``); there is no
-pure-Python implementation. This package file is only an import shim.
+The canonical import module is ``conditional_method`` (distribution:
+``conditional-method``). ``cfg`` is kept as a thin re-export shim so code
+written against the earlier name keeps working; new code should import
+from ``conditional_method``.
 """
 
-from importlib.metadata import PackageNotFoundError, version
-
-from ._c import (
-    _get_mod_qual_func_name,
-    cfg,
-    cfg_attr,
-    cm,
-    conditional_method,
-    debug,
-    debug_enabled,
-    if_,
+from conditional_method import *  # noqa: F401,F403
+from conditional_method import (
+    __all__,  # noqa: F401  (re-export)
+    __version__,  # noqa: F401  (re-export)
+    _c,  # noqa: F401  (expose conditional_method._c)
 )
-
-try:
-    __version__: str = version("conditional-method")
-except PackageNotFoundError:  # pragma: no cover - editable/source installs
-    __version__ = "0.0.0+unknown"
-
-__all__ = [
-    "conditional_method",
-    "if_",
-    "cm",
-    "_get_mod_qual_func_name",
-    "cfg_attr",
-    "cfg",
-    "debug",
-    "debug_enabled",
-]

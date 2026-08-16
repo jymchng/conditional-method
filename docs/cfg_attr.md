@@ -4,7 +4,7 @@
 method — only when the condition is true.
 
 ```python
-from cfg import cfg_attr
+from conditional_method import cfg_attr
 
 
 @cfg_attr(

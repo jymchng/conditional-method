@@ -7,7 +7,7 @@ import pytest
 from _compat import raises_missing_context_manager, raises_set_name_error
 
 # Import the cfg function
-from cfg import cfg, if_
+from conditional_method import cfg, if_
 
 
 def add_prefix_to_yielded(prefix):
@@ -288,18 +288,18 @@ def test_cfg_aliases():
     # Test that all aliases work the same
     @cfg(condition=True)
     def func1():
-        return "cfg"
+        return "conditional_method"
 
     @cfg(condition=True)
     def func2():
-        return "cfg"
+        return "conditional_method"
 
     @if_(condition=True)
     def func3():
         return "if_"
 
-    assert func1() == "cfg"
-    assert func2() == "cfg"
+    assert func1() == "conditional_method"
+    assert func2() == "conditional_method"
     assert func3() == "if_"
 
 
@@ -1827,7 +1827,7 @@ def test_cfg_without_brackets_with_function_factory():
 
 
 def test_cfg_without_brackets_with_decorator_factory():
-    from cfg import cm
+    from conditional_method import cm
 
     _cache = cm._cache
 

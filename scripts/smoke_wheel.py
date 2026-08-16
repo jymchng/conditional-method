@@ -5,9 +5,9 @@ Run from a clean venv after ``pip install`` of a wheel::
     python scripts/smoke_wheel.py
 """
 
-import cfg
-from cfg import cfg as cfg_deco
-from cfg import cfg_attr, cm, conditional_method, if_
+import conditional_method
+from conditional_method import cfg_attr, cm, conditional_method, if_
+from conditional_method import conditional_method as cfg_deco
 
 
 @cfg_deco(condition=True)
@@ -30,6 +30,6 @@ def _attr():
 
 assert _attr() == 1
 assert cm is conditional_method and cm is if_ and cm is cfg_deco
-assert cfg.__version__
+assert conditional_method.__version__
 
-print(f"wheel smoke OK (conditional-method {cfg.__version__})")
+print(f"wheel smoke OK (conditional-method {conditional_method.__version__})")

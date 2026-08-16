@@ -7,7 +7,7 @@ same convention as e.g. `beautifulsoup4` → `bs4`.
 
 ## Is there a pure-Python fallback?
 
-No. The entire implementation is the C extension `cfg._c`; the package
+No. The entire implementation is the C extension `conditional_method._c`; the package
 contains only a thin `__init__.py` shim. There is deliberately no pure
 Python implementation to maintain.
 

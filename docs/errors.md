@@ -29,7 +29,7 @@ false condition. The qualname names the affected function.
 !!! note "Version difference"
 
     On CPython < 3.12 this error is wrapped by the interpreter:
-    `RuntimeError: Error calling __set_name__ on 'cfg._TypeErrorRaiser' ...`
+    `RuntimeError: Error calling __set_name__ on 'conditional_method._TypeErrorRaiser' ...`
     with the `TypeError` attached as `__cause__`. On 3.12+ the `TypeError`
     propagates directly (with the wrapper text as a note).
 

@@ -1,7 +1,7 @@
 import os
 from functools import wraps
 
-from cfg import cfg, cfg_attr
+from conditional_method import cfg, cfg_attr
 
 
 # Example decorators to use with cfg_attr

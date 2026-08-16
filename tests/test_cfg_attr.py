@@ -5,7 +5,7 @@ from functools import lru_cache, wraps
 import pytest
 
 from _compat import raises_set_name_error
-from cfg import cfg_attr
+from conditional_method import cfg_attr
 
 
 # Fix for generator function test

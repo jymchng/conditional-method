@@ -23,9 +23,9 @@ uv run python setup.py build_ext --inplace
 ## Verify
 
 ```python
-import cfg
+import conditional_method
 
-print(cfg.__version__)  # e.g. 0.2.0.dev45
+print(conditional_method.__version__)  # e.g. 0.2.0.dev45
 ```
 
 ## Wheels

@@ -15,7 +15,7 @@ Please include:
 
 ## Security posture
 
-- **Memory safety**: the C extension (`cfg._c`) is a memory-safety
+- **Memory safety**: the C extension (`conditional_method._c`) is a memory-safety
   boundary. Refcount correctness, GC participation, and error-path
   discipline are enforced by code review, the ASan/UBSan CI job, and the
   allocation-failure injection test suite.

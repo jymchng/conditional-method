@@ -1,6 +1,6 @@
 # Usage: `@cfg`
 
-`@cfg` (aliases `@if_`, `@cm`, `@conditional_method`) selects which of
+`@cfg` (aliases `@cm`, `@if_`) selects which of
 several *identically named* method implementations survives on a class —
 at **class build time**. Only the selected implementation remains in the
 class's attribute set, so the class is *well-formed*: no runtime branching
@@ -11,7 +11,7 @@ inside method bodies, exactly one attribute per name.
 ### 1. Decorator factory (recommended)
 
 ```python
-from cfg import cfg
+from conditional_method import conditional_method
 
 
 class Worker:
@@ -40,7 +40,7 @@ work = cfg(work, condition=True)
 required):
 
 ```python
-@cfg  # TypeError: `@conditional_method` must be used as a decorator and
+@cfg  # TypeError: `@cfg` must be used as a decorator and
 def work(self):  #   `condition` must be specified ...
     ...
 ```

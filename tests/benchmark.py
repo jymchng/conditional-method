@@ -1,6 +1,6 @@
 """pytest-benchmark benchmarks for the pure-C implementation.
 
-The library is a C extension (``cfg._c``); there is no pure-Python
+The library is a C extension (``conditional_method._c``); there is no pure-Python
 implementation to compare against. These benchmarks therefore measure the C
 implementation's cost relative to plain Python baselines (no decoration,
 manual if/else, plain decorators).
@@ -15,7 +15,7 @@ from functools import wraps
 
 import pytest
 
-from cfg import cfg, cfg_attr
+from conditional_method import cfg, cfg_attr
 
 
 # --- helper decorators ---

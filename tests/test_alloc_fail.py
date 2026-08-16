@@ -1,7 +1,7 @@
 """Targeted C-extension error-path coverage (requires -DPY_CFG_TESTING).
 
 Exercises the parse-error, broken-protocol, surrogate-encoding, GC/clear and
-module-init error branches of ``cfg._c`` that the main suite cannot reach,
+module-init error branches of ``conditional_method._c`` that the main suite cannot reach,
 carrying the gcov line-coverage gate past 90%.
 
 (The guard-based allocation-failure sweeps for the *guarded* sites live in
@@ -19,11 +19,11 @@ import sys
 import pytest
 
 pytestmark = pytest.mark.skipif(
-    not hasattr(__import__("cfg")._c, "set_alloc_fail_count"),
+    not hasattr(__import__("conditional_method")._c, "set_alloc_fail_count"),
     reason="extension not built with PY_CFG_TESTING",
 )
 
-import cfg._c as c
+import conditional_method._c as c
 
 
 def _reset():
@@ -106,12 +106,12 @@ def test_cfg_callable_clear_via_self_cycle():
     """
     code = (
         "import gc\n"
-        "import cfg._c as cmod\n"
-        "import cfg as pkg\n"
+        "import conditional_method._c as cmod\n"
+        "import conditional_method as pkg\n"
         "cm_obj = cmod.cm\n"
         "cm_obj._self = cm_obj  # self-cycle via the instance dict\n"
         "for mod in (cmod, pkg):\n"
-        "    for name in ('cm', 'cfg', 'if_', 'conditional_method', 'cfg_attr'):\n"
+        "    for name in ('cm', 'cfg', 'if_', 'cfg_attr'):\n"
         "        delattr(mod, name)\n"
         "del cm_obj, cmod, pkg\n"
         "gc.collect()\n"
@@ -167,7 +167,7 @@ def test_raiser_surrogate_qualname():
 
 
 def test_debug_str_raises():
-    """cfg.debug: PyObject_Str failing (obj __str__ raises) -> return NULL."""
+    """conditional_method.debug: PyObject_Str failing (obj __str__ raises) -> return NULL."""
 
     class S:
         def __str__(self):
@@ -186,7 +186,7 @@ def test_debug_str_raises():
 
 
 def test_debug_surrogate():
-    """cfg.debug with an unencodable object hits the AsUTF8 NULL branch."""
+    """conditional_method.debug with an unencodable object hits the AsUTF8 NULL branch."""
 
     class S:
         def __str__(self):
@@ -211,7 +211,7 @@ def test_set_alloc_fail_count_bad_arg():
 
 
 def test_debug_no_args():
-    """cfg.debug() with no args -> SystemError from PyTuple_GetItem."""
+    """conditional_method.debug() with no args -> SystemError from PyTuple_GetItem."""
     orig = os.environ.get("__conditional_method_debug__")
     os.environ["__conditional_method_debug__"] = "true"
     try:

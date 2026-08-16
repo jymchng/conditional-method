@@ -5,7 +5,7 @@
 ```python
 import os
 
-from cfg import cfg
+from conditional_method import conditional_method
 
 ENV = os.environ.get("ENV", "development")
 
@@ -39,7 +39,7 @@ Conditions can be callables evaluated lazily per call:
 ```python
 import os
 
-from cfg import cfg
+from conditional_method import conditional_method
 
 
 class DatabaseConnector:
@@ -57,7 +57,7 @@ class DatabaseConnector:
 ```python
 import os
 
-from cfg import cfg_attr
+from conditional_method import cfg_attr
 
 os.environ["FEATURE_FLAG"] = "enabled"
 
@@ -83,7 +83,7 @@ def experimental(value):
 `@cfg` also works on module-level functions and on classes themselves:
 
 ```python
-from cfg import cfg
+from conditional_method import conditional_method
 
 
 @cfg(condition=True)

@@ -2,7 +2,7 @@ import os
 
 import pytest
 
-from cfg import cfg
+from conditional_method import cfg
 
 ENV_KEY = "_conditional_method_env_"
 

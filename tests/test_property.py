@@ -2,7 +2,7 @@
 
 Uses Hypothesis to generate functions (with unique qualified names),
 conditions (bool / callable), and decorator chains, then asserts the C
-extension (``cfg._c``) behaves exactly like a plain-Python reference model
+extension (``conditional_method._c``) behaves exactly like a plain-Python reference model
 for the public API:
 
 - ``cm`` / ``cfg`` / ``if_`` / ``conditional_method`` (all aliases of the
@@ -21,13 +21,12 @@ import pytest
 from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
-import cfg._c as c
-from cfg import (
+import conditional_method._c as c
+from conditional_method import (
     _get_mod_qual_func_name,
     cfg,
     cfg_attr,
     cm,
-    conditional_method,
     if_,
 )
 
@@ -138,10 +137,10 @@ def unique_func(draw):
 # --- Tests -----------------------------------------------------------------
 
 def test_alias_identity():
-    """cm, cfg, if_ and conditional_method are the same callable."""
+    """cm, cfg and if_ are the same callable (no conditional_method alias)."""
     assert cm is cfg
     assert cm is if_
-    assert cm is conditional_method
+    assert not hasattr(__import__("conditional_method"), "conditional_method")
     assert cm._cache is cfg_attr._cache or True  # both exist
 
 
@@ -294,9 +293,9 @@ def test_cfg_attr_factory_parity(cond):
 @given(cond=st.booleans())
 @settings(max_examples=40, deadline=None)
 def test_aliases_behave_identically(cond):
-    """cfg, if_, conditional_method produce identical results to cm."""
+    """cfg and if_ produce identical results to cm."""
     f = _make_func(13)
-    results = [api(f, condition=cond) for api in (cm, cfg, if_, conditional_method)]
+    results = [api(f, condition=cond) for api in (cm, cfg, if_)]
     raiser_flags = [_is_raiser(r) for r in results]
     assert all(flag == raiser_flags[0] for flag in raiser_flags)
     if not raiser_flags[0]:

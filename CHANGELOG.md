@@ -10,9 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.2.0] - 2026-08-16
 
 ### Added
-- Pure-C implementation: `cfg._c` (a CPython C extension) replaces the
+- Pure-C implementation: `conditional_method._c` (a CPython C extension) replaces the
   pure-Python implementation entirely.
-  - `@cfg` (aliases `@if_`, `@cm`, `@conditional_method`): conditional
+  - `@cfg` (aliases `@cm`, `@if_`): conditional
     method selection at class build time.
   - `@cfg_attr`: conditionally apply a chain of decorators.
   - `debug` / `debug_enabled`: opt-in C debug logging.
@@ -23,8 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   makes guarded allocations fail deterministically for OOM-path coverage.
 - Benchmarks: `tests/benchmark.py` (pytest-benchmark) and
   `benchmarks/bench.py` (standalone timeit harness → `results.json`).
-- CI coverage gate (`scripts/coverage-gate.sh`): builds `cfg._c` with gcov
-  coverage + `PY_CFG_TESTING`, runs the suite, and fails if `src/cfg/_c.c`
+- CI coverage gate (`scripts/coverage-gate.sh`): builds `conditional_method._c` with gcov
+  coverage + `PY_CFG_TESTING`, runs the suite, and fails if `src/conditional_method/_c.c`
   line coverage drops below 90%.
 - CI sanitizer gate (`scripts/sanitize-gate.sh`): runs the full suite under
   ASan/UBSan with `abort_on_error`/`halt_on_error` so any report fails CI.
@@ -43,7 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   empty-decorator cache bug).
 
 ### Changed
-- Rebuilt as a production-ready package: the C extension (`cfg._c`) with
+- Rebuilt as a production-ready package: the C extension (`conditional_method._c`) with
   the `cfg` import module, published on PyPI as **`conditional-method`**.
 - Raised the C line coverage from ~84% to >91% via targeted error-path
   tests and `CFG_ALLOC_TEST_FAIL()` test-only reachability hooks.

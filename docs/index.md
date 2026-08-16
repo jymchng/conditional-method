@@ -8,7 +8,7 @@ call-time condition.
 ```python
 import os
 
-from cfg import cfg
+from conditional_method import conditional_method
 
 ENV = os.environ.get("ENV", "development")
 
@@ -37,12 +37,12 @@ print(worker.work())  # development (only ONE `work` survives on Worker)
 pip install conditional-method
 ```
 
-The whole implementation is a C extension (`cfg._c`) built against the
+The whole implementation is a C extension (`conditional_method._c`) built against the
 Python Limited API (abi3): a single `cp39-abi3` wheel covers CPython 3.9–3.14.
 
 ## What's here
 
-- `@cfg` (aliases `@if_`, `@cm`, `@conditional_method`) — conditional method
+- `@cfg` (aliases `@cm`, `@if_`) — conditional method
   selection at class build time.
 - `@cfg_attr` — conditionally apply a chain of decorators.
 - `debug` / `debug_enabled` — opt-in C debug logging.

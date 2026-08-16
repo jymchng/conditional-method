@@ -61,7 +61,7 @@ Results are written to `benchmarks/results/results.json` and summarized in
 ## Project layout
 
 ```
-src/cfg/            package (import shim + C extension sources)
+src/conditional_method/            package (import shim + C extension sources)
   __init__.py       thin import shim
   _c.c              the entire implementation (CPython C extension)
   py.typed          type marker

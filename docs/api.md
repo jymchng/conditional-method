@@ -1,17 +1,25 @@
 # API Reference
 
-The entire implementation is a C extension (`cfg._c`); `cfg` is a thin
+The entire implementation is a C extension (`conditional_method._c`); `cfg` is a thin
 import shim.
 
 ## `cfg` module
 
 ```python
-from cfg import cfg, if_, cm, conditional_method, cfg_attr, debug, debug_enabled
+from conditional_method import (
+    cfg,
+    if_,
+    cm,
+    conditional_method,
+    cfg_attr,
+    debug,
+    debug_enabled,
+)
 ```
 
 ### `@cfg(condition=...)`
 
-Conditional method selection. Aliases: `@if_`, `@cm`, `@conditional_method`
+Conditional method selection. Aliases: `@cm`, `@if_`
 — all four are the **same object** (`cm is if_ is conditional_method is cfg`
 is `True`).
 
@@ -41,7 +49,7 @@ Internal helper returning `module.qualname` for a function, unwrapping
 `__wrapped__` / `__func__` / `fget` as needed. Raises `TypeError` when no
 name can be determined.
 
-## `cfg._c` internals
+## `conditional_method._c` internals
 
 Exposed for testing only (names prefixed with `_` are not part of the
 public API):

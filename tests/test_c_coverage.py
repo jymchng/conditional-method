@@ -1,4 +1,4 @@
-"""Targeted tests to raise C-extension (cfg._c) gcov line coverage >90%.
+"""Targeted tests to raise C-extension (conditional_method._c) gcov line coverage >90%.
 
 These exercise the error paths, fallbacks, GC hooks, and helper functions of
 the C module that the main test suite does not reach.
@@ -11,24 +11,23 @@ import sys
 import pytest
 
 from _compat import raises_set_name_error
-from cfg import (
+from conditional_method import (
     _get_mod_qual_func_name,
     cfg,
     cfg_attr,
     cm,
-    conditional_method,
     if_,
 )
 
 
 def test_debug_enabled_and_debug_api():
-    """Exercise cfg.debug / cfg.debug_enabled (both states)."""
+    """Exercise conditional_method.debug / conditional_method.debug_enabled (both states)."""
     original = os.environ.get("__conditional_method_debug__")
     try:
         os.environ.pop("__conditional_method_debug__", None)
         import importlib
 
-        import cfg as cfgmod
+        import conditional_method as cfgmod
 
         importlib.reload(cfgmod)
         assert cfgmod.debug_enabled() is False
@@ -186,7 +185,7 @@ def test_cm_factory_direct_with_callable_condition():
 
 def test_type_error_raiser_lifecycle():
     """TypeErrorRaiser: create via _raise_exec, __set_name__, call, GC."""
-    from cfg._c import _TypeErrorRaiser
+    from conditional_method._c import _TypeErrorRaiser
 
     raiser = _TypeErrorRaiser()
     assert raiser is not None
@@ -224,15 +223,17 @@ def test_cfg_callable_gc():
 
 
 def test_conditional_method_alias_equivalence():
-    """All aliases are the same callable."""
-    assert cm is conditional_method
+    """cm, if_ and cfg are the same callable; conditional_method is not an alias."""
+    import conditional_method as mod
+
     assert cm is if_
     assert cm is cfg
+    assert not hasattr(mod, "conditional_method")
 
 
 def test_raise_exec_with_qualname():
     """The TypeErrorRaiser carries the qualname into its error message."""
-    from cfg._c import _raise_exec, _TypeErrorRaiser
+    from conditional_method._c import _raise_exec, _TypeErrorRaiser
 
     raiser = _raise_exec("my.qual.name")
     assert raiser is not None
@@ -276,7 +277,7 @@ def test_get_func_name_fallback_loop_and_error():
 
 def test_cm_wrapper_no_condition():
     """_cm_wrapper as a module method (self=module) still processes a func."""
-    from cfg import _c
+    from conditional_method import _c
 
     def f():
         return 1
@@ -289,7 +290,7 @@ def test_cm_wrapper_no_condition():
 
 def test_cfg_attr_wrapper_bad_closure():
     """cfg_attr_wrapper with self not a 2-tuple closure raises RuntimeError."""
-    from cfg import _c
+    from conditional_method import _c
 
     with pytest.raises(RuntimeError):
         _c.cfg_attr_wrapper("not-a-tuple")
@@ -377,9 +378,9 @@ def test_debug_log_wired_into_cm():
     import subprocess
 
     code = (
-        "import cfg, os\n"
+        "import conditional_method, os\n"
         "os.environ['__conditional_method_debug__'] = 'true'\n"
-        "@cfg.cm(condition=True)\n"
+        "@conditional_method.cm(condition=True)\n"
         "def f(): return 1\n"
         "print(f())\n"
     )
@@ -396,7 +397,7 @@ def test_debug_log_wired_into_cm():
 def test_cfg_attr_cache_reuse_on_false():
     """A true-conditioned func is cached; a later false-condition with the
     same qualname returns the cached (decorated) func, not a raiser."""
-    import cfg._c as c
+    import conditional_method._c as c
 
     def f():
         return "x"
@@ -415,7 +416,7 @@ def test_cfg_attr_cache_reuse_on_false():
 def test_cm_cache_reuse_on_false():
     """A true-conditioned func is cached; a later false-condition returns
     the cached func."""
-    import cfg._c as c
+    import conditional_method._c as c
 
     def f():
         return "y"
@@ -428,7 +429,7 @@ def test_cm_cache_reuse_on_false():
 
 def test_cfg_callable_uninitialized():
     """CfgCallable_call with a cleared callable raises RuntimeError."""
-    from cfg._c import _CfgCallable
+    from conditional_method._c import _CfgCallable
 
     try:
         obj = _CfgCallable()

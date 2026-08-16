@@ -1,6 +1,6 @@
 """Test-only allocation-failure injection (requires -DPY_CFG_TESTING).
 
-Sweeps cfg._c.set_alloc_fail_count(n) so each guarded allocation site fails
+Sweeps conditional_method._c.set_alloc_fail_count(n) so each guarded allocation site fails
 with MemoryError once, covering the C module's OOM error paths (which is how
 the C line coverage reaches >90% in the gcov CI gate).
 """
@@ -8,11 +8,11 @@ the C line coverage reaches >90% in the gcov CI gate).
 import pytest
 
 pytestmark = pytest.mark.skipif(
-    not hasattr(__import__("cfg")._c, "set_alloc_fail_count"),
+    not hasattr(__import__("conditional_method")._c, "set_alloc_fail_count"),
     reason="extension not built with PY_CFG_TESTING",
 )
 
-import cfg._c as c
+import conditional_method._c as c
 
 
 def _reset():
@@ -183,7 +183,7 @@ def test_exhaustive_fail_sweep_cfg_attr_callable():
 
 def test_exhaustive_fail_sweep_raiser_call():
     """Fail sweeps over TypeErrorRaiser.__call__ -> _raise_typeerror allocs."""
-    from cfg._c import _TypeErrorRaiser
+    from conditional_method._c import _TypeErrorRaiser
 
     def scenario():
         r = _TypeErrorRaiser()

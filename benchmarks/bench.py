@@ -18,7 +18,7 @@ import timeit
 from functools import wraps
 from pathlib import Path
 
-from cfg import __version__, cfg, cfg_attr
+from conditional_method import __version__, cfg, cfg_attr
 
 RESULTS_PATH = Path(__file__).parent / "results" / "results.json"
 

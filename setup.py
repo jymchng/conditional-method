@@ -1,6 +1,6 @@
 """setuptools build configuration for the C extension.
 
-The core implementation of ``conditional-method`` is a C extension (``cfg._c``)
+The core implementation is a C extension (``conditional_method._c``)
 built with the Limited API / Stable ABI (abi3) so a single ``cp39-abi3``
 wheel covers CPython 3.9+.
 
@@ -23,8 +23,8 @@ if not IS_EMSCRIPTEN:
 setup(
     ext_modules=[
         Extension(
-            "cfg._c",
-            sources=["src/cfg/_c.c"],
+            "conditional_method._c",
+            sources=["src/conditional_method/_c.c"],
             **ext_kwargs,
         ),
     ],

@@ -4,7 +4,7 @@ import sys
 import pytest
 
 from _compat import raises_set_name_error
-from cfg import cfg
+from conditional_method import cfg
 
 
 @pytest.fixture(autouse=True)

@@ -330,7 +330,7 @@ static PyMethodDef TypeErrorRaiser_methods[] = {
 
 static PyTypeObject TypeErrorRaiserType = {
     PyVarObject_HEAD_INIT(NULL, 0).tp_name =
-        "cfg._TypeErrorRaiser",
+        "conditional_method._TypeErrorRaiser",
     .tp_doc = "Type error raiser for conditional methods",
     .tp_basicsize = sizeof(TypeErrorRaiserObject),
     .tp_itemsize = 0,
@@ -385,7 +385,7 @@ static PyObject *CfgCallable_call(CfgCallableObject *self, PyObject *args,
 }
 
 static PyTypeObject CfgCallableType = {
-    PyVarObject_HEAD_INIT(NULL, 0).tp_name = "cfg._CfgCallable",
+    PyVarObject_HEAD_INIT(NULL, 0).tp_name = "conditional_method._CfgCallable",
     .tp_basicsize = sizeof(CfgCallableObject),
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC,
     .tp_dictoffset = offsetof(CfgCallableObject, dict),
@@ -561,7 +561,7 @@ static PyObject *cm(PyObject *self, PyObject *args, PyObject *kwargs) {
     if (condition == Py_None) {
       PyErr_SetString(
           PyExc_TypeError,
-          "`@conditional_method` must be used as a decorator and `condition` "
+          "`@cfg` must be used as a decorator and `condition` "
           "must be specified as an instance of type `bool`");
       return NULL;
     }
@@ -581,7 +581,7 @@ static PyObject *cm(PyObject *self, PyObject *args, PyObject *kwargs) {
   if (condition == Py_None) {
     PyErr_SetString(
         PyExc_TypeError,
-        "`@conditional_method` must be used as a decorator and `condition` "
+        "`@cfg` must be used as a decorator and `condition` "
         "must be specified as an instance of type `bool`");
     return NULL;
   }
@@ -1155,13 +1155,6 @@ PyMODINIT_FUNC PyInit__c(void) {
   }
 
   if (PyModule_AddObject(m, "cfg", cm_func) < 0) {
-    Py_DECREF(cm_func);
-    Py_DECREF(m);
-    return NULL;
-  }
-
-  Py_INCREF(cm_func);
-  if (PyModule_AddObject(m, "conditional_method", cm_func) < 0) {
     Py_DECREF(cm_func);
     Py_DECREF(m);
     return NULL;
