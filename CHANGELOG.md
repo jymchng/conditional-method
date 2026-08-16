@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.3] - 2026-08-16
+
+### Changed
+
+- **Pyodide wheel now targets Emscripten 5.0.3** (pyodide 314.0.3): the
+  release workflow pins `pyodide-version: 314.0.3`, so the `*.whl` built
+  for the browser matches the AsyncMove playground's Pyodide runtime.
+  (Caveat: micropip 0.11.1 in pyodide 314.0.3 still reports the runtime as
+  Emscripten "5.0.3" while the wheel tag uses the "2025.0" scheme — the
+  installability mismatch is a pyodide runtime-side issue, tracked
+  separately.)
+
 ## [0.2.2] - 2026-08-16
 
 ### Fixed
