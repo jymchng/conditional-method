@@ -192,6 +192,7 @@ static void _raise_typeerror(TypeErrorRaiserObject *self) {
   PyObject *item;
   while ((item = PyIter_Next(qualnames_iter)) != NULL) {
     if (PyList_Append(qualnames_list, item) < 0) {
+      CFG_ALLOC_FAIL_GUARD_VOID();
       Py_DECREF(item);
       Py_DECREF(qualnames_list);
       Py_DECREF(qualnames_iter);
@@ -213,6 +214,7 @@ static void _raise_typeerror(TypeErrorRaiserObject *self) {
   Py_DECREF(qualnames_list);
 
   if (joined_qualnames == NULL) {
+    CFG_ALLOC_FAIL_GUARD_VOID();
     return;
   }
 
@@ -221,6 +223,7 @@ static void _raise_typeerror(TypeErrorRaiserObject *self) {
   if (PyUnicode_Check(self->qualname)) {
     qualname_str = PyUnicode_AsUTF8(self->qualname);
     if (qualname_str == NULL) {
+      CFG_ALLOC_FAIL_GUARD_VOID();
       Py_DECREF(joined_qualnames);
       return;
     }
@@ -241,6 +244,7 @@ static void _raise_typeerror(TypeErrorRaiserObject *self) {
   Py_DECREF(joined_qualnames);
 
   if (error_msg == NULL) {
+    CFG_ALLOC_FAIL_GUARD_VOID();
     return;
   }
 
@@ -860,32 +864,34 @@ static PyObject *cfg_attr(PyObject *self, PyObject *args, PyObject *kwargs) {
     Py_INCREF(decorators);
   }
 
+  /* Helper: build a factory wrapper that captures condition+decorators. */
+  PyObject *closure = NULL;
+  PyObject *wrapper = NULL;
+
   /* Evaluate a callable condition */
   if (PyCallable_Check(condition)) {
     /* Factory form: return a wrapper that evaluates per-function. */
     if (func == NULL || func == Py_None) {
       CFG_ALLOC_FAIL_GUARD();
-    PyObject *closure = PyTuple_New(2);
+      closure = PyTuple_New(2);
       if (closure == NULL) {
-        Py_DECREF(decorators);
-        return NULL;
+        goto error;
       }
       Py_INCREF(condition);
       PyTuple_SET_ITEM(closure, 0, condition);
       PyTuple_SET_ITEM(closure, 1, decorators);
+      decorators = NULL; /* ownership transferred into closure */
       CFG_ALLOC_FAIL_GUARD();
-    PyObject *wrapper = PyCFunction_New(&cfg_attr_wrapper_def, closure);
+      wrapper = PyCFunction_New(&cfg_attr_wrapper_def, closure);
       if (wrapper == NULL) {
-        Py_DECREF(closure);
-        return NULL;
+        goto error;
       }
       return wrapper;
     }
     /* Direct: evaluate condition(func) */
     PyObject *cond_args = PyTuple_Pack(1, func);
     if (cond_args == NULL) {
-      Py_DECREF(decorators);
-      return NULL;
+      goto error;
     }
     PyObject *cond_result = PyObject_CallObject(condition, cond_args);
     Py_DECREF(cond_args);
@@ -909,115 +915,118 @@ static PyObject *cfg_attr(PyObject *self, PyObject *args, PyObject *kwargs) {
         PyErr_Restore(error_type, error_value, error_traceback);
       }
       Py_XDECREF(fq);
-      Py_DECREF(decorators);
-      return NULL;
+      goto error;
     }
     int cond_bool = PyObject_IsTrue(cond_result);
     Py_DECREF(cond_result);
     if (cond_bool == -1) {
-      Py_DECREF(decorators);
-      return NULL;
+      goto error;
     }
     if (cond_bool) {
       PyObject *fq = _get_func_name(NULL, func);
       if (fq == NULL) {
-        Py_DECREF(decorators);
-        return NULL;
+        goto error;
       }
       PyObject *result = cfg_attr_apply_decorators(func, decorators, fq);
       Py_DECREF(fq);
       Py_DECREF(decorators);
+      decorators = NULL;
       return result;
     }
     /* False: raiser */
     PyObject *fq = _get_func_name(NULL, func);
     if (fq == NULL) {
-      Py_DECREF(decorators);
-      return NULL;
+      goto error;
     }
     PyObject *cached = PyDict_GetItem(_cfg_attr_cache, fq);
     if (cached != NULL) {
       Py_DECREF(fq);
       Py_DECREF(decorators);
+      decorators = NULL;
       Py_INCREF(cached);
       return cached;
     }
     PyObject *raiser = cfg_make_raiser(fq);
     Py_DECREF(fq);
     Py_DECREF(decorators);
+    decorators = NULL;
     return raiser;
   }
 
   /* Non-callable condition */
   int cond_truthy = PyObject_IsTrue(condition);
   if (cond_truthy == -1) {
-    Py_DECREF(decorators);
-    return NULL;
+    goto error;
   }
 
   if (cond_truthy) {
     /* True: apply decorators (factory or direct) */
     if (func == NULL || func == Py_None) {
       _cfg_log("cfg_attr: true factory");
-      PyObject *closure = PyTuple_New(2);
+      closure = PyTuple_New(2);
       if (closure == NULL) {
-        Py_DECREF(decorators);
-        return NULL;
+        goto error;
       }
       Py_INCREF(condition);
       PyTuple_SET_ITEM(closure, 0, condition);
       PyTuple_SET_ITEM(closure, 1, decorators);
-      PyObject *wrapper = PyCFunction_New(&cfg_attr_wrapper_def, closure);
+      decorators = NULL; /* ownership transferred into closure */
+      wrapper = PyCFunction_New(&cfg_attr_wrapper_def, closure);
       if (wrapper == NULL) {
-        Py_DECREF(closure);
-        return NULL;
+        goto error;
       }
       return wrapper;
     }
     PyObject *fq = _get_func_name(NULL, func);
     if (fq == NULL) {
-      Py_DECREF(decorators);
-      return NULL;
+      goto error;
     }
     PyObject *result = cfg_attr_apply_decorators(func, decorators, fq);
     Py_DECREF(fq);
     Py_DECREF(decorators);
+    decorators = NULL;
     return result;
   }
 
   /* False: raiser (factory or direct) */
   if (func == NULL || func == Py_None) {
-    PyObject *closure = PyTuple_New(2);
+    closure = PyTuple_New(2);
     if (closure == NULL) {
-      Py_DECREF(decorators);
-      return NULL;
+      goto error;
     }
     Py_INCREF(condition);
     PyTuple_SET_ITEM(closure, 0, condition);
     PyTuple_SET_ITEM(closure, 1, decorators);
-    PyObject *wrapper = PyCFunction_New(&cfg_attr_wrapper_def, closure);
+    decorators = NULL; /* ownership transferred into closure */
+    wrapper = PyCFunction_New(&cfg_attr_wrapper_def, closure);
     if (wrapper == NULL) {
-      Py_DECREF(closure);
-      return NULL;
+      goto error;
     }
     return wrapper;
   }
   PyObject *fq = _get_func_name(NULL, func);
   if (fq == NULL) {
-    Py_DECREF(decorators);
-    return NULL;
+    goto error;
   }
   PyObject *cached = PyDict_GetItem(_cfg_attr_cache, fq);
   if (cached != NULL) {
     Py_DECREF(fq);
     Py_DECREF(decorators);
+    decorators = NULL;
     Py_INCREF(cached);
     return cached;
   }
   PyObject *raiser = cfg_make_raiser(fq);
   Py_DECREF(fq);
   Py_DECREF(decorators);
+  decorators = NULL;
   return raiser;
+
+error:
+  Py_XDECREF(closure);
+  Py_XDECREF(wrapper);
+  Py_XDECREF(decorators);
+  return NULL;
 }
 
 /* Named method definitions (used for module aliases in PyInit__c). */
