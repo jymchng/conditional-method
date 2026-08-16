@@ -245,13 +245,21 @@ jobs:
                   assert "cp39-abi3" in tag, f"bad tag in {w}:\n{tag}"
           EOF
 
-      - name: Create GitHub Release (draft)
+      - name: Delete existing release for tag (idempotent re-runs)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${{ inputs.tag || github.ref_name }}"
+          # Keep the tag; only drop any previous release for it so re-runs of
+          # the same tag (e.g. after a pipeline fix) recreate cleanly.
+          gh release delete "$TAG" --yes 2>/dev/null || true
+
+      - name: Create GitHub Release (published, not draft)
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG="${{ inputs.tag || github.ref_name }}"
           gh release create "$TAG" \
-            --draft \
             --generate-notes \
             --title "conditional-method $TAG" \
             --repo "${{ github.repository }}"
