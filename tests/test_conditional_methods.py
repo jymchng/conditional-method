@@ -202,7 +202,7 @@ class TestConditionalMethods:
         """Test a class where all methods are decorated with False condition"""
 
         # This should raise a RuntimeError because no condition is True
-        with pytest.raises(RuntimeError) as excinfo:
+        with pytest.raises(TypeError) as excinfo:
 
             class AllFalseMethods:
                 @cfg(condition=False)
@@ -218,8 +218,4 @@ class TestConditionalMethods:
                     return "This should not be used as well"
 
         # Check that the error message mentions the condition issue
-        assert (
-            # "Error calling __set_name__ on 'cfg._TypeErrorRaiser' instance 'method1' in 'AllFalseMethods'"
-            "Error calling __set_name__ on '_TypeErrorRaiser' instance 'method1' in 'AllFalseMethods'"
-            in str(excinfo.value)
-        )
+        assert "None of the conditions is true" in str(excinfo.value)

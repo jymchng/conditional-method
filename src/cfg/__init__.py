@@ -4,29 +4,27 @@ Public API::
 
     from cfg import cm, cfg, if_, conditional_method, cfg_attr
 
-The performance-critical implementation lives in the C extension module
-``cfg._c``; ``cfg._py_lib`` is the pure-Python reference implementation
-used as a fallback when the extension is not built.
+The entire implementation is a C extension module (``cfg._c``); there is no
+pure-Python implementation. This package file is only an import shim.
 """
 
-try:  # pragma: no cover - depends on build
-    from ._c import (
-        conditional_method,
-        if_,
-        cm,
-        cfg_attr,
-        _get_mod_qual_func_name,
-        cfg,
-    )
-except ImportError:  # pragma: no cover - fallback to pure Python
-    from ._py_lib import (
-        conditional_method,
-        if_,
-        cm,
-        cfg_attr,
-        _get_mod_qual_func_name,
-        cfg,
-    )
+from importlib.metadata import PackageNotFoundError, version
+
+from ._c import (
+    _get_mod_qual_func_name,
+    cfg,
+    cfg_attr,
+    cm,
+    conditional_method,
+    debug,
+    debug_enabled,
+    if_,
+)
+
+try:
+    __version__: str = version("python-cfg")
+except PackageNotFoundError:  # pragma: no cover - editable/source installs
+    __version__ = "0.0.0+unknown"
 
 __all__ = [
     "conditional_method",
@@ -35,4 +33,6 @@ __all__ = [
     "_get_mod_qual_func_name",
     "cfg_attr",
     "cfg",
+    "debug",
+    "debug_enabled",
 ]

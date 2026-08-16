@@ -1,184 +1,95 @@
 import os
+import subprocess
 import sys
-import pytest
-import logging
-from io import StringIO
 
+# The debug logger is implemented in C (cfg._c). These tests exercise the
+# env-var-gated behavior through cfg.debug / cfg.debug_enabled.
 
-# Always set up basic logging configuration for these tests
-@pytest.fixture(autouse=True)
-def configure_logging():
-    """Set up logging to capture output"""
-    # Configure logging before tests
-    root = logging.getLogger()
-
-    # Store original level
-    original_level = root.level
-
-    # Set to DEBUG
-    root.setLevel(logging.DEBUG)
-
-    # Capture log output
-    log_capture = StringIO()
-    handler = logging.StreamHandler(log_capture)
-    formatter = logging.Formatter("%(name)s - %(levelname)s - %(message)s")
-    handler.setFormatter(formatter)
-
-    # Store original handlers
-    original_handlers = root.handlers.copy()
-
-    # Clear existing handlers
-    root.handlers = []
-
-    # Add capture handler
-    root.addHandler(handler)
-
-    yield log_capture
-
-    # Restore original logging setup
-    root.handlers = original_handlers
-    root.setLevel(original_level)
+ENV_KEY = "__conditional_method_debug__"
 
 
 class TestDebugMode:
-    """Tests specifically focused on the debug environment variable functionality"""
-
-    def test_debug_env_var_true_enables_logging(self, configure_logging):
-        """Test that setting environment variable to true enables logging"""
-        # Store original value
-        original_value = os.environ.get("__conditional_method_debug__", None)
-
+    def test_debug_env_var_true_enables_logging(self):
+        """Setting the env var to a truthy value enables debug logging."""
+        original = os.environ.get(ENV_KEY)
         try:
-            # Set environment variable to true
-            os.environ["__conditional_method_debug__"] = "true"
-
-            # Import to trigger logger initialization
+            os.environ[ENV_KEY] = "true"
+            import cfg
             import importlib
 
-            # Clear any existing imports
-            if "cfg" in sys.modules:
-                del sys.modules["cfg"]
-            if "cfg._logger" in sys.modules:
-                del sys.modules["cfg._logger"]
-
-            # Force reload with new environment
-            import cfg._logger
-
-            importlib.reload(cfg._logger)
-
-            # Trigger log message
-            from cfg._logger import logger
-
-            logger.debug("This is a test debug message")
-
-            # Check captured output
-            log_output = configure_logging.getvalue()
-            assert "This is a test debug message" in log_output
-            assert "cfg - DEBUG" in log_output
-
+            importlib.reload(cfg)
+            assert cfg.debug_enabled() is True
+            # debug() writes a marker to stderr
+            code = "import cfg; cfg.debug('marker-abc-123')"
+            proc = subprocess.run(
+                [sys.executable, "-c", code],
+                capture_output=True,
+                text=True,
+                env={**os.environ, "PYTHONPATH": "src"},
+            )
+            assert "marker-abc-123" in proc.stderr
+            assert "DEBUG" in proc.stderr
         finally:
-            # Restore original value
-            if original_value is None:
-                if "__conditional_method_debug__" in os.environ:
-                    del os.environ["__conditional_method_debug__"]
+            if original is not None:
+                os.environ[ENV_KEY] = original
             else:
-                os.environ["__conditional_method_debug__"] = original_value
+                os.environ.pop(ENV_KEY, None)
 
-    def test_debug_env_var_false_disables_logging(self, configure_logging):
-        """Test that setting environment variable to false disables logging"""
-        # Store original value
-        original_value = os.environ.get("__conditional_method_debug__", None)
-
+    def test_debug_env_var_false_disables_logging(self):
+        """Setting the env var to 'false' disables debug logging."""
+        original = os.environ.get(ENV_KEY)
         try:
-            # Set environment variable to false
-            os.environ["__conditional_method_debug__"] = "false"
-
-            # Import to trigger logger initialization
+            os.environ[ENV_KEY] = "false"
+            import cfg
             import importlib
 
-            # Clear any existing imports
-            if "cfg" in sys.modules:
-                del sys.modules["cfg"]
-            if "cfg._logger" in sys.modules:
-                del sys.modules["cfg._logger"]
-
-            # Force reload with new environment
-            import cfg._logger
-
-            importlib.reload(cfg._logger)
-
-            # Trigger log message
-            from cfg._logger import logger
-
-            # Clear capture buffer
-            configure_logging.truncate(0)
-            configure_logging.seek(0)
-
-            # Log a message with the noop logger
-            logger.debug("This message should not appear")
-
-            # Check captured output
-            log_output = configure_logging.getvalue()
-            assert "This message should not appear" not in log_output
-            assert log_output == ""  # Should be empty
-
+            importlib.reload(cfg)
+            assert cfg.debug_enabled() is False
+            code = "import cfg; cfg.debug('should-not-appear')"
+            proc = subprocess.run(
+                [sys.executable, "-c", code],
+                capture_output=True,
+                text=True,
+                env={**os.environ, "PYTHONPATH": "src"},
+            )
+            assert "should-not-appear" not in proc.stderr
         finally:
-            # Restore original value
-            if original_value is None:
-                if "__conditional_method_debug__" in os.environ:
-                    del os.environ["__conditional_method_debug__"]
+            if original is not None:
+                os.environ[ENV_KEY] = original
             else:
-                os.environ["__conditional_method_debug__"] = original_value
+                os.environ.pop(ENV_KEY, None)
 
-    def test_debug_mode_in_conditional_methods(self, configure_logging):
-        """Test that debug logs appear when using conditional methods"""
+    def test_debug_mode_in_conditional_methods(self):
+        """Debug logs appear when a conditional method calls cfg.debug."""
         from cfg import cfg
 
-        # Store original value
-        original_value = os.environ.get("__conditional_method_debug__", None)
-
+        original = os.environ.get(ENV_KEY)
         try:
-            # Set environment variable to true
-            os.environ["__conditional_method_debug__"] = "true"
-
-            # Import to trigger logger initialization
+            os.environ[ENV_KEY] = "true"
+            import cfg as cfgmod
             import importlib
 
-            # Clear any existing imports related to logger
-            if "cfg._logger" in sys.modules:
-                del sys.modules["cfg._logger"]
+            importlib.reload(cfgmod)
 
-            # Force reload with new environment
-            import cfg._logger as logger
-
-            importlib.reload(logger)
-
-            # Define a test class using conditional methods
-            class TestClass:
-                @cfg(condition=True)
-                def test_method(self):
-                    logger.logger.debug("This is a test debug message")
-                    return "TestClass::test_method"
-
-            # Clear capture buffer
-            configure_logging.truncate(0)
-            configure_logging.seek(0)
-
-            # Instantiate and use the class to trigger logging
-            test_instance = TestClass()
-            result = test_instance.test_method()
-            assert result == "TestClass::test_method"
-
-            # Check captured output
-            log_output = configure_logging.getvalue()
-
-            # Verify log output contains Dispatcher debug information
-            assert "This is a test debug message" in log_output
-
+            code = (
+                "import cfg\n"
+                "class TestClass:\n"
+                "    @cfg.cfg(condition=True)\n"
+                "    def test_method(self):\n"
+                "        cfg.debug('inside-method-xyz')\n"
+                "        return 'TestClass::test_method'\n"
+                "assert TestClass().test_method() == 'TestClass::test_method'\n"
+            )
+            proc = subprocess.run(
+                [sys.executable, "-c", code],
+                capture_output=True,
+                text=True,
+                env={**os.environ, "PYTHONPATH": "src"},
+            )
+            assert "inside-method-xyz" in proc.stderr
+            assert proc.stdout.strip() == ""
         finally:
-            # Restore original value
-            if original_value is None:
-                if "__conditional_method_debug__" in os.environ:
-                    del os.environ["__conditional_method_debug__"]
+            if original is not None:
+                os.environ[ENV_KEY] = original
             else:
-                os.environ["__conditional_method_debug__"] = original_value
+                os.environ.pop(ENV_KEY, None)

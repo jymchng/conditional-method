@@ -1,6 +1,61 @@
 #include <Python.h>
 #include <structmember.h>
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdarg.h>
+
+/* --- Debug logger (pure C, mirrors the old Python _logger) --- */
+#define CFG_DEBUG_ENV_KEY "__conditional_method_debug__"
+
+static int _debug_enabled(void) {
+  const char *val = getenv(CFG_DEBUG_ENV_KEY);
+  if (val == NULL) {
+    return 0;
+  }
+  return strcmp(val, "false") != 0;
+}
+
+static void _cfg_log(const char *fmt, ...) {
+  if (!_debug_enabled()) {
+    return;
+  }
+  va_list ap;
+  va_start(ap, fmt);
+  fprintf(stderr, "conditional_method - DEBUG - ");
+  vfprintf(stderr, fmt, ap);
+  fprintf(stderr, "\n");
+  va_end(ap);
+}
+
+static PyObject *cfg_debug(PyObject *Py_UNUSED(self), PyObject *args) {
+  if (!_debug_enabled()) {
+    Py_RETURN_NONE;
+  }
+  PyObject *msg = PyObject_Str(PyTuple_GetItem(args, 0));
+  if (msg == NULL) {
+    return NULL;
+  }
+  const char *s = PyUnicode_AsUTF8(msg);
+  if (s == NULL) {
+    Py_DECREF(msg);
+    return NULL;
+  }
+  fprintf(stderr, "conditional_method - DEBUG - %s\n", s);
+  Py_DECREF(msg);
+  Py_RETURN_NONE;
+}
+
+static PyObject *cfg_debug_enabled(PyObject *Py_UNUSED(self),
+                                   PyObject *Py_UNUSED(ignored)) {
+  if (_debug_enabled()) {
+    Py_RETURN_TRUE;
+  }
+  Py_RETURN_FALSE;
+}
+
+
 /* Forward declarations */
 static PyObject *_cm_wrapper(PyObject *self, PyObject *args);
 static PyObject *cfg_attr_wrapper(PyObject *self, PyObject *args);
@@ -18,8 +73,9 @@ static PyMethodDef cfg_attr_wrapper_def = {
     "cfg_attr_wrapper", (PyCFunction)cfg_attr_wrapper, METH_VARARGS,
     "Wrapper function for cfg_attr when used as a decorator"};
 
-/* Module level cache for decorated functions */
-static PyObject *_cache = NULL;
+/* Module level caches: one for cm/cfg/if_/conditional_method, one for cfg_attr */
+static PyObject *_cm_cache = NULL;
+static PyObject *_cfg_attr_cache = NULL;
 
 /* TypeErrorRaiser type declaration */
 typedef struct {
@@ -49,16 +105,22 @@ static int TypeErrorRaiser_clear(TypeErrorRaiserObject *self) {
 }
 
 static void TypeErrorRaiser_finalize(TypeErrorRaiserObject *Py_UNUSED(self)) {
-  /* Clear the cache */
-  if (_cache != NULL) {
-    PyDict_Clear(_cache);
+  /* Clear the caches */
+  if (_cm_cache != NULL) {
+    PyDict_Clear(_cm_cache);
+  }
+  if (_cfg_attr_cache != NULL) {
+    PyDict_Clear(_cfg_attr_cache);
   }
 }
 
 static void _raise_typeerror(TypeErrorRaiserObject *self) {
-  /* Clear the cache */
-  if (_cache != NULL) {
-    PyDict_Clear(_cache);
+  /* Clear the caches */
+  if (_cm_cache != NULL) {
+    PyDict_Clear(_cm_cache);
+  }
+  if (_cfg_attr_cache != NULL) {
+    PyDict_Clear(_cfg_attr_cache);
   }
 
   /* Join the qualnames for the error message */
@@ -172,9 +234,12 @@ static PyObject *TypeErrorRaiser_new(PyTypeObject *type,
     }
   }
 
-  /* Clear the cache */
-  if (_cache != NULL) {
-    PyDict_Clear(_cache);
+  /* Clear the caches */
+  if (_cm_cache != NULL) {
+    PyDict_Clear(_cm_cache);
+  }
+  if (_cfg_attr_cache != NULL) {
+    PyDict_Clear(_cfg_attr_cache);
   }
 
   return (PyObject *)self;
@@ -208,6 +273,81 @@ static PyTypeObject TypeErrorRaiserType = {
     .tp_methods = TypeErrorRaiser_methods,
     .tp_members = TypeErrorRaiser_members,
 };
+
+/* --- CfgCallable: a callable heap type with an instance __dict__ ---
+   Used for the module-level aliases (cfg/cm/if_/conditional_method/cfg_attr)
+   so that `cm._cache` / `cfg_attr._cache` are accessible, matching the
+   pure-Python reference API. */
+typedef struct {
+  PyObject_HEAD
+  PyObject *callable; /* underlying PyCFunction */
+  PyObject *dict;     /* instance __dict__ */
+} CfgCallableObject;
+
+static void CfgCallable_dealloc(CfgCallableObject *self) {
+  PyObject_GC_UnTrack(self);
+  Py_CLEAR(self->callable);
+  Py_CLEAR(self->dict);
+  Py_TYPE(self)->tp_free((PyObject *)self);
+}
+
+static int CfgCallable_traverse(CfgCallableObject *self, visitproc visit,
+                                void *arg) {
+  Py_VISIT(self->callable);
+  Py_VISIT(self->dict);
+  return 0;
+}
+
+static int CfgCallable_clear(CfgCallableObject *self) {
+  Py_CLEAR(self->callable);
+  Py_CLEAR(self->dict);
+  return 0;
+}
+
+static PyObject *CfgCallable_call(CfgCallableObject *self, PyObject *args,
+                                  PyObject *kwargs) {
+  if (self->callable == NULL) {
+    PyErr_SetString(PyExc_RuntimeError, "uninitialized CfgCallable");
+    return NULL;
+  }
+  return PyObject_Call(self->callable, args, kwargs);
+}
+
+static PyTypeObject CfgCallableType = {
+    PyVarObject_HEAD_INIT(NULL, 0).tp_name = "cfg._CfgCallable",
+    .tp_basicsize = sizeof(CfgCallableObject),
+    .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC,
+    .tp_dictoffset = offsetof(CfgCallableObject, dict),
+    .tp_call = (ternaryfunc)CfgCallable_call,
+    .tp_dealloc = (destructor)CfgCallable_dealloc,
+    .tp_traverse = (traverseproc)CfgCallable_traverse,
+    .tp_clear = (inquiry)CfgCallable_clear,
+};
+
+/* Wrap a PyCFunction in a CfgCallable instance. */
+static PyObject *CfgCallable_new_wrapper(PyMethodDef *def) {
+  PyObject *cf = PyCFunction_New(def, NULL);
+  if (cf == NULL) {
+    return NULL;
+  }
+  if (PyType_Ready(&CfgCallableType) < 0) {
+    Py_DECREF(cf);
+    return NULL;
+  }
+  CfgCallableObject *obj =
+      (CfgCallableObject *)CfgCallableType.tp_alloc(&CfgCallableType, 0);
+  if (obj == NULL) {
+    Py_DECREF(cf);
+    return NULL;
+  }
+  obj->callable = cf; /* steals the reference */
+  obj->dict = PyDict_New();
+  if (obj->dict == NULL) {
+    Py_DECREF((PyObject *)obj);
+    return NULL;
+  }
+  return (PyObject *)obj;
+}
 
 /* Function to create a new TypeErrorRaiser instance */
 static PyObject *_raise_exec(PyObject *args, PyObject *kwargs) {
@@ -413,21 +553,25 @@ static PyObject *_cm_inner(PyObject *self, PyObject *args) {
     Py_DECREF(args_tuple);
 
     if (cond_result == NULL) {
-      /* Get the error message and format it */
+      /* Only TypeError from the condition is wrapped; other exceptions
+       * (e.g. ValueError) propagate unchanged (matches the Python
+       * reference implementation). */
       PyObject *error_type, *error_value, *error_traceback;
       PyErr_Fetch(&error_type, &error_value, &error_traceback);
-
-      PyObject *error_msg = PyUnicode_FromFormat(
-          "Error calling `condition` for `%U`: %S", f_qualname, error_value);
-
-      if (error_msg != NULL) {
-        PyErr_SetObject(PyExc_TypeError, error_msg);
-        Py_DECREF(error_msg);
+      if (error_type != NULL &&
+          PyErr_GivenExceptionMatches(error_type, PyExc_TypeError)) {
+        PyObject *error_msg = PyUnicode_FromFormat(
+            "Error calling `condition` for `%U`: %S", f_qualname, error_value);
+        if (error_msg != NULL) {
+          PyErr_SetObject(PyExc_TypeError, error_msg);
+          Py_DECREF(error_msg);
+        }
+        Py_XDECREF(error_type);
+        Py_XDECREF(error_value);
+        Py_XDECREF(error_traceback);
+      } else {
+        PyErr_Restore(error_type, error_value, error_traceback);
       }
-
-      Py_XDECREF(error_type);
-      Py_XDECREF(error_value);
-      Py_XDECREF(error_traceback);
       Py_DECREF(f_qualname);
       return NULL;
     }
@@ -448,7 +592,7 @@ static PyObject *_cm_inner(PyObject *self, PyObject *args) {
 
   /* If the condition is true, add the function to the cache and return it */
   if (cond_bool) {
-    if (PyDict_SetItem(_cache, f_qualname, func) < 0) {
+    if (PyDict_SetItem(_cm_cache, f_qualname, func) < 0) {
       Py_DECREF(f_qualname);
       return NULL;
     }
@@ -458,7 +602,7 @@ static PyObject *_cm_inner(PyObject *self, PyObject *args) {
   }
 
   /* If the condition is false, check if the function is in the cache */
-  PyObject *cached_func = PyDict_GetItem(_cache, f_qualname);
+  PyObject *cached_func = PyDict_GetItem(_cm_cache, f_qualname);
   if (cached_func != NULL) {
     Py_DECREF(f_qualname);
     Py_INCREF(cached_func);
@@ -529,6 +673,73 @@ static PyObject *cfg_attr_wrapper(PyObject *self, PyObject *args) {
   return result;
 }
 
+/* Helper: apply decorators to a function (true branch of cfg_attr).
+   decorators is a sequence; applied right-to-left so decorators[0] is outermost. */
+static PyObject *cfg_attr_apply_decorators(PyObject *func, PyObject *decorators,
+                                           PyObject *f_qualname) {
+  if (!PySequence_Check(decorators)) {
+    PyErr_SetString(PyExc_TypeError, "decorators must be a sequence");
+    return NULL;
+  }
+  Py_ssize_t n = PySequence_Length(decorators);
+  if (n < 0) {
+    return NULL;
+  }
+  if (n == 0) {
+    Py_INCREF(func);
+    return func;
+  }
+  PyObject *result = func;
+  Py_INCREF(result);
+  for (Py_ssize_t i = n - 1; i >= 0; i--) {
+    PyObject *decorator = PySequence_GetItem(decorators, i);
+    if (decorator == NULL) {
+      Py_DECREF(result);
+      return NULL;
+    }
+    PyObject *args_tuple = PyTuple_Pack(1, result);
+    Py_DECREF(result);
+    if (args_tuple == NULL) {
+      Py_DECREF(decorator);
+      return NULL;
+    }
+    PyObject *decorated = PyObject_Call(decorator, args_tuple, NULL);
+    Py_DECREF(args_tuple);
+    Py_DECREF(decorator);
+    if (decorated == NULL) {
+      return NULL;
+    }
+    result = decorated;
+  }
+  if (f_qualname != NULL) {
+    if (PyDict_SetItem(_cfg_attr_cache, f_qualname, result) < 0) {
+      Py_DECREF(result);
+      return NULL;
+    }
+  }
+  return result;
+}
+
+/* Helper: create a TypeErrorRaiser for a false-conditioned function
+   (shared by cm and cfg_attr). Adds f_qualname to the raiser's set. */
+static PyObject *cfg_make_raiser(PyObject *f_qualname) {
+  PyObject *raiser_args = Py_BuildValue("(O)", f_qualname);
+  if (raiser_args == NULL) {
+    return NULL;
+  }
+  PyObject *raiser = _raise_exec(raiser_args, NULL);
+  Py_DECREF(raiser_args);
+  if (raiser == NULL) {
+    return NULL;
+  }
+  TypeErrorRaiserObject *raiser_obj = (TypeErrorRaiserObject *)raiser;
+  if (PySet_Add(raiser_obj->f_qualnames, f_qualname) < 0) {
+    Py_DECREF(raiser);
+    return NULL;
+  }
+  return raiser;
+}
+
 /* Implementation of cfg_attr function */
 static PyObject *cfg_attr(PyObject *self, PyObject *args, PyObject *kwargs) {
   PyObject *func = NULL;
@@ -542,7 +753,23 @@ static PyObject *cfg_attr(PyObject *self, PyObject *args, PyObject *kwargs) {
     return NULL;
   }
 
-  /* If decorators is not provided, use an empty tuple */
+  /* f is None and condition is None -> ValueError (decorator factory misuse) */
+  if ((func == NULL || func == Py_None) && condition == Py_None) {
+    PyErr_SetString(PyExc_ValueError,
+                    "`condition` is required and must be a bool or a callable "
+                    "that takes the decorated function and returns a bool");
+    return NULL;
+  }
+
+  /* condition is None (but f given) -> TypeError */
+  if (condition == Py_None) {
+    PyErr_SetString(PyExc_TypeError,
+                    "`condition` is required and must be a bool or a callable "
+                    "that takes the decorated function and returns a bool");
+    return NULL;
+  }
+
+  /* Default decorators to an empty tuple */
   if (decorators == NULL) {
     decorators = PyTuple_New(0);
     if (decorators == NULL) {
@@ -552,105 +779,172 @@ static PyObject *cfg_attr(PyObject *self, PyObject *args, PyObject *kwargs) {
     Py_INCREF(decorators);
   }
 
-  /* If func is None, return a decorator */
-  if (func == NULL || func == Py_None) {
-    /* If condition is not provided, raise an error */
-    if (condition == Py_None) {
-      PyErr_SetString(PyExc_ValueError,
-                      "condition is required and must be a bool or a callable "
-                      "that takes the decorated function and returns a bool");
+  /* Evaluate a callable condition */
+  if (PyCallable_Check(condition)) {
+    /* Factory form: return a wrapper that evaluates per-function. */
+    if (func == NULL || func == Py_None) {
+      PyObject *closure = PyTuple_New(2);
+      if (closure == NULL) {
+        Py_DECREF(decorators);
+        return NULL;
+      }
+      Py_INCREF(condition);
+      PyTuple_SET_ITEM(closure, 0, condition);
+      PyTuple_SET_ITEM(closure, 1, decorators);
+      PyObject *wrapper = PyCFunction_New(&cfg_attr_wrapper_def, closure);
+      if (wrapper == NULL) {
+        Py_DECREF(closure);
+        return NULL;
+      }
+      return wrapper;
+    }
+    /* Direct: evaluate condition(func) */
+    PyObject *cond_args = PyTuple_Pack(1, func);
+    if (cond_args == NULL) {
       Py_DECREF(decorators);
       return NULL;
     }
+    PyObject *cond_result = PyObject_CallObject(condition, cond_args);
+    Py_DECREF(cond_args);
+    if (cond_result == NULL) {
+      PyObject *error_type, *error_value, *error_traceback;
+      PyErr_Fetch(&error_type, &error_value, &error_traceback);
+      PyObject *fq = _get_func_name(NULL, func);
+      if (error_type != NULL &&
+          PyErr_GivenExceptionMatches(error_type, PyExc_TypeError) &&
+          fq != NULL) {
+        PyObject *error_msg = PyUnicode_FromFormat(
+            "Error calling `condition` for `%U`: %S", fq, error_value);
+        if (error_msg != NULL) {
+          PyErr_SetObject(PyExc_TypeError, error_msg);
+          Py_DECREF(error_msg);
+        }
+        Py_XDECREF(error_type);
+        Py_XDECREF(error_value);
+        Py_XDECREF(error_traceback);
+      } else {
+        PyErr_Restore(error_type, error_value, error_traceback);
+      }
+      Py_XDECREF(fq);
+      Py_DECREF(decorators);
+      return NULL;
+    }
+    int cond_bool = PyObject_IsTrue(cond_result);
+    Py_DECREF(cond_result);
+    if (cond_bool == -1) {
+      Py_DECREF(decorators);
+      return NULL;
+    }
+    if (cond_bool) {
+      PyObject *fq = _get_func_name(NULL, func);
+      if (fq == NULL) {
+        Py_DECREF(decorators);
+        return NULL;
+      }
+      PyObject *result = cfg_attr_apply_decorators(func, decorators, fq);
+      Py_DECREF(fq);
+      Py_DECREF(decorators);
+      return result;
+    }
+    /* False: raiser */
+    PyObject *fq = _get_func_name(NULL, func);
+    if (fq == NULL) {
+      Py_DECREF(decorators);
+      return NULL;
+    }
+    PyObject *cached = PyDict_GetItem(_cfg_attr_cache, fq);
+    if (cached != NULL) {
+      Py_DECREF(fq);
+      Py_DECREF(decorators);
+      Py_INCREF(cached);
+      return cached;
+    }
+    PyObject *raiser = cfg_make_raiser(fq);
+    Py_DECREF(fq);
+    Py_DECREF(decorators);
+    return raiser;
+  }
 
-    /* Create a closure with condition and decorators */
+  /* Non-callable condition */
+  int cond_truthy = PyObject_IsTrue(condition);
+  if (cond_truthy == -1) {
+    Py_DECREF(decorators);
+    return NULL;
+  }
+
+  if (cond_truthy) {
+    /* True: apply decorators (factory or direct) */
+    if (func == NULL || func == Py_None) {
+      PyObject *closure = PyTuple_New(2);
+      if (closure == NULL) {
+        Py_DECREF(decorators);
+        return NULL;
+      }
+      Py_INCREF(condition);
+      PyTuple_SET_ITEM(closure, 0, condition);
+      PyTuple_SET_ITEM(closure, 1, decorators);
+      PyObject *wrapper = PyCFunction_New(&cfg_attr_wrapper_def, closure);
+      if (wrapper == NULL) {
+        Py_DECREF(closure);
+        return NULL;
+      }
+      return wrapper;
+    }
+    PyObject *fq = _get_func_name(NULL, func);
+    if (fq == NULL) {
+      Py_DECREF(decorators);
+      return NULL;
+    }
+    PyObject *result = cfg_attr_apply_decorators(func, decorators, fq);
+    Py_DECREF(fq);
+    Py_DECREF(decorators);
+    return result;
+  }
+
+  /* False: raiser (factory or direct) */
+  if (func == NULL || func == Py_None) {
     PyObject *closure = PyTuple_New(2);
     if (closure == NULL) {
       Py_DECREF(decorators);
       return NULL;
     }
-
     Py_INCREF(condition);
     PyTuple_SET_ITEM(closure, 0, condition);
-    PyTuple_SET_ITEM(closure, 1,
-                     decorators); // Transfers ownership of decorators
-
-    /* Create and return the wrapper function */
+    PyTuple_SET_ITEM(closure, 1, decorators);
     PyObject *wrapper = PyCFunction_New(&cfg_attr_wrapper_def, closure);
     if (wrapper == NULL) {
       Py_DECREF(closure);
       return NULL;
     }
-
     return wrapper;
   }
-
-  /* If func is not None and condition is true, apply the decorators */
-  if (condition != Py_None && PyObject_IsTrue(condition)) {
-    /* Check if decorators is a sequence */
-    if (!PySequence_Check(decorators)) {
-      PyErr_SetString(PyExc_TypeError, "decorators must be a sequence");
-      Py_DECREF(decorators);
-      return NULL;
-    }
-
-    /* Get the length of decorators */
-    Py_ssize_t n_decorators = PySequence_Length(decorators);
-    if (n_decorators < 0) {
-      Py_DECREF(decorators);
-      return NULL;
-    }
-
-    /* If no decorators, just return the function */
-    if (n_decorators == 0) {
-      Py_DECREF(decorators);
-      Py_INCREF(func);
-      return func;
-    }
-
-    /* Apply each decorator in reverse order for proper nesting */
-    PyObject *result = func;
-    Py_INCREF(result);
-
-    for (Py_ssize_t i = n_decorators - 1; i >= 0; i--) {
-      PyObject *decorator = PySequence_GetItem(decorators, i);
-      if (decorator == NULL) {
-        Py_DECREF(result);
-        Py_DECREF(decorators);
-        return NULL;
-      }
-
-      /* Apply the decorator to the function */
-      PyObject *args_tuple = PyTuple_Pack(1, result);
-      if (args_tuple == NULL) {
-        Py_DECREF(decorator);
-        Py_DECREF(result);
-        Py_DECREF(decorators);
-        return NULL;
-      }
-
-      PyObject *decorated = PyObject_Call(decorator, args_tuple, NULL);
-      Py_DECREF(args_tuple);
-      Py_DECREF(result);
-      Py_DECREF(decorator);
-
-      if (decorated == NULL) {
-        Py_DECREF(decorators);
-        return NULL;
-      }
-
-      result = decorated;
-    }
-
+  PyObject *fq = _get_func_name(NULL, func);
+  if (fq == NULL) {
     Py_DECREF(decorators);
-    return result;
+    return NULL;
   }
-
-  /* If condition is false, return the function unchanged */
+  PyObject *cached = PyDict_GetItem(_cfg_attr_cache, fq);
+  if (cached != NULL) {
+    Py_DECREF(fq);
+    Py_DECREF(decorators);
+    Py_INCREF(cached);
+    return cached;
+  }
+  PyObject *raiser = cfg_make_raiser(fq);
+  Py_DECREF(fq);
   Py_DECREF(decorators);
-  Py_INCREF(func);
-  return func;
+  return raiser;
 }
+
+/* Named method definitions (used for module aliases in PyInit__c). */
+static PyMethodDef cm_method_def = {
+    "cm", (PyCFunction)(void (*)(void))cm, METH_VARARGS | METH_KEYWORDS,
+    "Conditionally select function implementations based on a runtime condition."};
+
+static PyMethodDef cfg_attr_method_def = {
+    "cfg_attr", (PyCFunction)(void (*)(void))cfg_attr,
+    METH_VARARGS | METH_KEYWORDS,
+    "Conditionally apply a chain of decorators to a function."};
 
 /* Define the methods of the module */
 static PyMethodDef ConditionalMethodMethods[] = {
@@ -659,6 +953,8 @@ static PyMethodDef ConditionalMethodMethods[] = {
      "Create a TypeErrorRaiser instance."},
     {"_get_func_name", _get_func_name, METH_O,
      "Get the fully qualified name of a function."},
+    {"_get_mod_qual_func_name", _get_func_name, METH_O,
+     "Alias of _get_func_name (fully qualified function name)."},
     {"cm", (PyCFunction)(void (*)(void))cm, METH_VARARGS | METH_KEYWORDS,
      "Conditionally select function implementations based on a runtime "
      "condition."},
@@ -667,6 +963,8 @@ static PyMethodDef ConditionalMethodMethods[] = {
     {"cfg_attr", (PyCFunction)(void (*)(void))cfg_attr,
      METH_VARARGS | METH_KEYWORDS,
      "Conditionally apply a chain of decorators to a function."},
+    {"debug", cfg_debug, METH_VARARGS, "Log a debug message (noop unless enabled)."},
+    {"debug_enabled", cfg_debug_enabled, METH_NOARGS, "Whether debug logging is enabled."},
     {NULL, NULL, 0, NULL} /* Sentinel */
 };
 
@@ -705,21 +1003,29 @@ PyMODINIT_FUNC PyInit__c(void) {
     return NULL;
   }
 
-  /* Create and add the module-level cache */
-  _cache = PyDict_New();
-  if (_cache == NULL) {
+  /* Create the module-level caches */
+  _cm_cache = PyDict_New();
+  _cfg_attr_cache = PyDict_New();
+  if (_cm_cache == NULL || _cfg_attr_cache == NULL) {
+    Py_XDECREF(_cm_cache);
+    Py_XDECREF(_cfg_attr_cache);
     Py_DECREF(m);
     return NULL;
   }
-  if (PyModule_AddObject(m, "_cache", _cache) < 0) {
-    Py_DECREF(_cache);
+  if (PyModule_AddObject(m, "_cm_cache", _cm_cache) < 0) {
+    Py_DECREF(_cm_cache);
+    Py_DECREF(m);
+    return NULL;
+  }
+  if (PyModule_AddObject(m, "_cfg_attr_cache", _cfg_attr_cache) < 0) {
+    Py_DECREF(_cfg_attr_cache);
     Py_DECREF(m);
     return NULL;
   }
 
-  /* Create global aliases for the cm function */
-  PyObject *cm_func =
-      PyCFunction_New(&ConditionalMethodMethods[2], NULL); // Index 2 is "cm"
+  /* Create global aliases for the cm function (callable heap objects so
+     cm._cache is settable) */
+  PyObject *cm_func = CfgCallable_new_wrapper(&cm_method_def);
   if (cm_func == NULL) {
     Py_DECREF(m);
     return NULL;
@@ -745,9 +1051,22 @@ PyMODINIT_FUNC PyInit__c(void) {
     return NULL;
   }
 
+  /* Expose cm._cache (matches the pure-Python reference API) */
+  if (PyObject_SetAttrString(cm_func, "_cache", _cm_cache) < 0) {
+    Py_DECREF(m);
+    return NULL;
+  }
+  /* The method-table entry "cm" is a plain builtin; replace it with the
+     callable heap object so `cfg.cm._cache` works. */
+  Py_INCREF(cm_func);
+  if (PyModule_AddObject(m, "cm", cm_func) < 0) {
+    Py_DECREF(cm_func);
+    Py_DECREF(m);
+    return NULL;
+  }
+
   /* Create and add cfg_attr function */
-  PyObject *cfg_attr_func = PyCFunction_New(&ConditionalMethodMethods[4],
-                                            NULL); // Index 4 is "cfg_attr"
+  PyObject *cfg_attr_func = CfgCallable_new_wrapper(&cfg_attr_method_def);
   if (cfg_attr_func == NULL) {
     Py_DECREF(m);
     return NULL;
@@ -755,6 +1074,30 @@ PyMODINIT_FUNC PyInit__c(void) {
 
   if (PyModule_AddObject(m, "cfg_attr", cfg_attr_func) < 0) {
     Py_DECREF(cfg_attr_func);
+    Py_DECREF(m);
+    return NULL;
+  }
+
+  /* Expose cfg_attr._cache (matches the pure-Python reference API) */
+  if (PyObject_SetAttrString(cfg_attr_func, "_cache", _cfg_attr_cache) < 0) {
+    Py_DECREF(m);
+    return NULL;
+  }
+  Py_INCREF(cfg_attr_func);
+  if (PyModule_AddObject(m, "cfg_attr", cfg_attr_func) < 0) {
+    Py_DECREF(cfg_attr_func);
+    Py_DECREF(m);
+    return NULL;
+  }
+
+  /* Register the CfgCallable heap type */
+  if (PyType_Ready(&CfgCallableType) < 0) {
+    Py_DECREF(m);
+    return NULL;
+  }
+  Py_INCREF(&CfgCallableType);
+  if (PyModule_AddObject(m, "_CfgCallable", (PyObject *)&CfgCallableType) < 0) {
+    Py_DECREF(&CfgCallableType);
     Py_DECREF(m);
     return NULL;
   }

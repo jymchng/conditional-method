@@ -231,7 +231,7 @@ def test_cfg_with_class_method():
 
 
 def test_cfg_with_class_method_false_condition():
-    with pytest.raises(RuntimeError):
+    with pytest.raises(TypeError):
 
         class TestClass:
             @cfg(condition=False)
@@ -432,7 +432,7 @@ def test_cfg_with_conditional_inheritance():
         def method(self):
             return "base_true"
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(TypeError):
 
         class DerivedClass(BaseClass):
             @cfg(condition=False)
@@ -1668,7 +1668,7 @@ def test_cfg_without_brackets_with_context_manager():
             def __exit__(self, exc_type, exc_val, exc_tb):
                 return False
 
-    with pytest.raises(AttributeError):
+    with pytest.raises(TypeError):
         with TestContextManager() as result:
             assert result == "entered"
 

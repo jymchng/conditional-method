@@ -255,7 +255,7 @@ class TestCfgAttr:
         assert TestClass.test_method() == "static_result"
 
     def test_with_class_method_false_condition(self):
-        with pytest.raises(RuntimeError):
+        with pytest.raises(TypeError):
 
             class TestClass:
                 @cfg_attr(condition=False, decorators=[add_prefix("method")])

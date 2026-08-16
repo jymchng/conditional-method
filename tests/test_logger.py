@@ -1,106 +1,79 @@
 import os
-import logging
-from unittest.mock import patch, MagicMock
+import subprocess
+import sys
 
-# Direct import to test the logger itself
-from cfg._logger import (
-    ENV_KEY_TO_ACTIVATE_DEBUG_LOGGER,
-)
+# The debug logger is implemented in C (cfg._c). Test it through the public
+# debug / debug_enabled API and through the env-var-gated behavior.
+
+ENV_KEY = "__conditional_method_debug__"
 
 
 class TestLogger:
-    def test_noop_logger_when_debug_disabled(self):
-        """Test that NoopLogger is returned when the debug environment variable is not set"""
-        # Save original environment
-        original_env = os.environ.get(ENV_KEY_TO_ACTIVATE_DEBUG_LOGGER, None)
-
+    def test_debug_enabled_false_by_default(self):
+        """debug_enabled() is False when the env var is unset or 'false'."""
+        original = os.environ.get(ENV_KEY)
         try:
-            # Ensure environment variable is not set or set to false
-            if ENV_KEY_TO_ACTIVATE_DEBUG_LOGGER in os.environ:
-                del os.environ[ENV_KEY_TO_ACTIVATE_DEBUG_LOGGER]
-
-            # Re-import to get fresh instance with clean environment
+            os.environ.pop(ENV_KEY, None)
+            import cfg
             import importlib
-            import cfg._logger
 
-            importlib.reload(cfg._logger)
-
-            # Check if the logger is a NoopLogger
-            from cfg._logger import logger
-
-            assert not logger  # NoopLogger should return False in bool context
-
-            # Verify behavior - NoopLogger should not raise exceptions on any method call
-            logger.debug("This should not raise an error")
-            logger.info("This should not raise an error")
-            logger.warning("This should not raise an error")
-            logger.error("This should not raise an error")
-
+            importlib.reload(cfg)
+            assert cfg.debug_enabled() is False
         finally:
-            # Restore environment
-            if original_env is not None:
-                os.environ[ENV_KEY_TO_ACTIVATE_DEBUG_LOGGER] = original_env
-            elif ENV_KEY_TO_ACTIVATE_DEBUG_LOGGER in os.environ:
-                del os.environ[ENV_KEY_TO_ACTIVATE_DEBUG_LOGGER]
+            if original is not None:
+                os.environ[ENV_KEY] = original
 
-    def test_real_logger_when_debug_enabled(self):
-        """Test that a real logger is returned when the debug environment variable is set to 'true'"""
-        # Save original environment
-        original_env = os.environ.get(ENV_KEY_TO_ACTIVATE_DEBUG_LOGGER, None)
-
+    def test_debug_enabled_true_when_env_var_set(self):
+        """debug_enabled() is True when the env var is set to a truthy value."""
+        original = os.environ.get(ENV_KEY)
         try:
-            # Set environment variable to true
-            os.environ[ENV_KEY_TO_ACTIVATE_DEBUG_LOGGER] = "true"
-
-            # Re-import to get fresh instance with the environment variable set
+            os.environ[ENV_KEY] = "true"
+            import cfg
             import importlib
-            import cfg._logger
 
-            importlib.reload(cfg._logger)
-
-            # Get logger after reload
-            from cfg._logger import logger
-
-            # The real logger should evaluate to True in a bool context
-            assert logger
-
-            # Check that it's a real logging.Logger instance
-            assert isinstance(logger, logging.Logger)
-            assert logger.name == "cfg"
-
+            importlib.reload(cfg)
+            assert cfg.debug_enabled() is True
         finally:
-            # Restore environment
-            if original_env is not None:
-                os.environ[ENV_KEY_TO_ACTIVATE_DEBUG_LOGGER] = original_env
-            elif ENV_KEY_TO_ACTIVATE_DEBUG_LOGGER in os.environ:
-                del os.environ[ENV_KEY_TO_ACTIVATE_DEBUG_LOGGER]
+            if original is not None:
+                os.environ[ENV_KEY] = original
+            else:
+                os.environ.pop(ENV_KEY, None)
 
-    @patch("logging.getLogger")
-    def test_logger_is_configured_with_debug_level(self, mock_get_logger):
-        """Test that the logger is configured with DEBUG level when enabled"""
-        # Mock logger to capture settings
-        mock_logger = MagicMock()
-        mock_get_logger.return_value = mock_logger
-
-        # Save original environment
-        original_env = os.environ.get(ENV_KEY_TO_ACTIVATE_DEBUG_LOGGER, None)
-
+    def test_debug_callable_does_not_raise_when_disabled(self):
+        """cfg.debug(...) must not raise when debug is disabled."""
+        original = os.environ.get(ENV_KEY)
         try:
-            # Set environment variable to true
-            os.environ[ENV_KEY_TO_ACTIVATE_DEBUG_LOGGER] = "true"
-
-            # Re-import to get fresh instance with the environment variable set
+            os.environ.pop(ENV_KEY, None)
+            import cfg
             import importlib
-            import cfg._logger
 
-            importlib.reload(cfg._logger)
-
-            # Verify getLogger was called with correct name
-            mock_get_logger.assert_called_once_with("cfg")
-
+            importlib.reload(cfg)
+            assert cfg.debug("hello") is None
+            assert cfg.debug("a", "b") is None
         finally:
-            # Restore environment
-            if original_env is not None:
-                os.environ[ENV_KEY_TO_ACTIVATE_DEBUG_LOGGER] = original_env
-            elif ENV_KEY_TO_ACTIVATE_DEBUG_LOGGER in os.environ:
-                del os.environ[ENV_KEY_TO_ACTIVATE_DEBUG_LOGGER]
+            if original is not None:
+                os.environ[ENV_KEY] = original
+
+    def test_debug_logs_to_stderr_when_enabled(self):
+        """When debug is enabled, cfg.debug prints to stderr."""
+        original = os.environ.get(ENV_KEY)
+        try:
+            os.environ[ENV_KEY] = "true"
+            code = (
+                "import cfg; "
+                "cfg.debug('marker-xyz'); "
+                "print('done')"
+            )
+            proc = subprocess.run(
+                [sys.executable, "-c", code],
+                capture_output=True,
+                text=True,
+                env={**os.environ, "PYTHONPATH": "src"},
+            )
+            assert "marker-xyz" in proc.stderr
+            assert "done" in proc.stdout
+        finally:
+            if original is not None:
+                os.environ[ENV_KEY] = original
+            else:
+                os.environ.pop(ENV_KEY, None)
