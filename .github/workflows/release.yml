@@ -285,6 +285,15 @@ jobs:
           merge-multiple: true
           path: dist
 
+      - name: Exclude pyodide (wasm32) wheel from PyPI
+        run: |
+          # The pyodide wheel (emscripten_<ver>_wasm32) ships via the GitHub
+          # Release only. PyPI rejects the emscripten_* platform tag (400
+          # "Binary wheel ... has an unsupported platform tag"), so publish
+          # sdist + native wheels to PyPI and keep the wasm wheel on GitHub.
+          rm -f dist/*emscripten*.whl dist/*pyemscripten*.whl
+          ls -1 dist/
+
       - name: Publish to PyPI (trusted publishing)
         uses: pypa/gh-action-pypi-publish@v1.14.2
         with:
