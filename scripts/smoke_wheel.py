@@ -6,8 +6,8 @@ Run from a clean venv after ``pip install`` of a wheel::
 """
 
 import conditional_method
-from conditional_method import cfg_attr, cm, conditional_method, if_
-from conditional_method import conditional_method as cfg_deco
+from conditional_method import cfg as cfg_deco
+from conditional_method import cfg_attr, cm, if_
 
 
 @cfg_deco(condition=True)

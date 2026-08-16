@@ -11,7 +11,7 @@ inside method bodies, exactly one attribute per name.
 ### 1. Decorator factory (recommended)
 
 ```python
-from conditional_method import conditional_method
+from conditional_method import cfg
 
 
 class Worker:

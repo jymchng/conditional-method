@@ -380,7 +380,8 @@ def test_debug_log_wired_into_cm():
     code = (
         "import conditional_method, os\n"
         "os.environ['__conditional_method_debug__'] = 'true'\n"
-        "@conditional_method.cm(condition=True)\n"
+        "from conditional_method import cfg\n"
+        "@cfg(condition=True)\n"
         "def f(): return 1\n"
         "print(f())\n"
     )

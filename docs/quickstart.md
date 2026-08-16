@@ -5,7 +5,7 @@
 ```python
 import os
 
-from conditional_method import conditional_method
+from conditional_method import cfg
 
 ENV = os.environ.get("ENV", "development")
 
@@ -39,7 +39,7 @@ Conditions can be callables evaluated lazily per call:
 ```python
 import os
 
-from conditional_method import conditional_method
+from conditional_method import cfg
 
 
 class DatabaseConnector:
@@ -83,7 +83,7 @@ def experimental(value):
 `@cfg` also works on module-level functions and on classes themselves:
 
 ```python
-from conditional_method import conditional_method
+from conditional_method import cfg
 
 
 @cfg(condition=True)

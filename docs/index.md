@@ -8,7 +8,7 @@ call-time condition.
 ```python
 import os
 
-from conditional_method import conditional_method
+from conditional_method import cfg
 
 ENV = os.environ.get("ENV", "development")
 

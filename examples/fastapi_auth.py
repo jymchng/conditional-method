@@ -6,7 +6,7 @@ import jwt
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from conditional_method import conditional_method
+from conditional_method import cfg
 
 # Environment setup
 ENVIRONMENT_KEY = "ENVIRONMENT_KEY"

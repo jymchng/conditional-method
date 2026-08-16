@@ -65,7 +65,7 @@ Successfully installed conditional-method
 ```python
 import os
 
-from conditional_method import conditional_method
+from conditional_method import cfg
 
 ENVIRONMENT = os.environ.get("ENV", "development")
 
@@ -98,7 +98,7 @@ print(Worker.__dict__)
 ```python
 import os
 
-from conditional_method import conditional_method
+from conditional_method import cfg
 
 
 class DatabaseConnector:

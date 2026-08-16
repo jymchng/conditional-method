@@ -1,6 +1,6 @@
 import os
 
-from conditional_method import conditional_method
+from conditional_method import cfg
 
 ENVIRONMENT_KEY = "ENVIRONMENT_KEY"
 os.environ[ENVIRONMENT_KEY] = "production"

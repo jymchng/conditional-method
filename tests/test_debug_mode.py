@@ -75,8 +75,9 @@ class TestDebugMode:
 
             code = (
                 "import conditional_method\n"
+                "from conditional_method import cfg\n"
                 "class TestClass:\n"
-                "    @conditional_method.cfg(condition=True)\n"
+                "    @cfg(condition=True)\n"
                 "    def test_method(self):\n"
                 "        conditional_method.debug('inside-method-xyz')\n"
                 "        return 'TestClass::test_method'\n"
