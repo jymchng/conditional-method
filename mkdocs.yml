@@ -1,4 +1,4 @@
-site_name: python-cfg
+site_name: conditional-method
 site_description: >-
   A decorator @cfg that selects a method implementation among those that are
   identically named on a class at class build time — leaving only the selected

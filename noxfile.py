@@ -542,7 +542,7 @@ def test_client_install_run(session: Session):
         build(session)
     with alter_session(session, dependency_group="dev"):
         list_dist_files(session)
-    session.run("pip", "uninstall", "python-cfg", "-y")
+    session.run("pip", "uninstall", "conditional-method", "-y")
     # Find the tarball with the largest semver version
     import glob
     import re
@@ -550,14 +550,14 @@ def test_client_install_run(session: Session):
     from packaging import version
 
     # Get all tarball files
-    tarball_files = glob.glob("dist/python_cfg-*.tar.gz")
+    tarball_files = glob.glob("dist/conditional_method-*.tar.gz")
 
     if not tarball_files:
         session.error("No tarball files found in dist/ directory")
 
     # Extract version numbers using regex
     version_pattern = re.compile(
-        r"python_cfg-([0-9]+\.[0-9]+\.[0-9]+(?:\.[0-9]+)?(?:(?:a|b|rc)[0-9]+)?(?:\.post[0-9]+)?(?:\.dev[0-9]+)?).tar.gz"
+        r"conditional_method-([0-9]+\.[0-9]+\.[0-9]+(?:\.[0-9]+)?(?:(?:a|b|rc)[0-9]+)?(?:\.post[0-9]+)?(?:\.dev[0-9]+)?).tar.gz"
     )
 
     # Create a list of (file_path, version) tuples
@@ -588,7 +588,7 @@ def test_client_install_run(session: Session):
         "-c",
         "from cfg import cfg; print('cfg imported')",
     )
-    session.run("uv", "run", "pip", "uninstall", "python-cfg", "-y")
+    session.run("uv", "run", "pip", "uninstall", "conditional-method", "-y")
 
     with alter_session(session, dependency_group="test"):
         test(session)

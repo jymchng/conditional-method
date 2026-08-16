@@ -10,7 +10,7 @@
 
 ## Measured results
 
-Environment: CPython 3.13, linux x86_64, `python-cfg` 0.2.0.dev41.
+Environment: CPython 3.13, linux x86_64, `conditional-method` 0.2.0.dev41.
 (Full JSON in `benchmarks/results/results.json`.)
 
 | scenario | best µs/op | mean µs/op |

@@ -2,7 +2,7 @@
 
 ## Reporting a vulnerability
 
-If you discover a security issue in `python-cfg`, **please do not** open a
+If you discover a security issue in `conditional-method`, **please do not** open a
 public issue. Report it privately via GitHub's
 [security advisory workflow](https://github.com/jymchng/conditional-method/security/advisories/new)
 or by emailing the maintainers.
@@ -19,7 +19,7 @@ Please include:
   boundary. Refcount correctness, GC participation, and error-path
   discipline are enforced by code review, the ASan/UBSan CI job, and the
   allocation-failure injection test suite.
-- **Zero runtime dependencies**: `python-cfg` has no third-party runtime
+- **Zero runtime dependencies**: `conditional-method` has no third-party runtime
   dependencies, minimizing the supply-chain surface.
 - **No secrets committed**: credentials are never stored in the repository;
   release automation uses environment secrets and trusted publishing.
@@ -31,7 +31,7 @@ Please include:
 ## Supported versions
 
 Security fixes are provided for the latest release. Older releases receive
-fixes on a best-effort basis; upgrade to the newest `python-cfg` to stay
+fixes on a best-effort basis; upgrade to the newest `conditional-method` to stay
 current.
 
 ## Reporting process

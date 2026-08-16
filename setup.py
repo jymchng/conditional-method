@@ -1,6 +1,6 @@
 """setuptools build configuration for the C extension.
 
-The core implementation of ``python-cfg`` is a C extension (``cfg._c``)
+The core implementation of ``conditional-method`` is a C extension (``cfg._c``)
 built with the Limited API / Stable ABI (abi3) so a single ``cp39-abi3``
 wheel covers CPython 3.9+.
 

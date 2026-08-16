@@ -3,13 +3,13 @@
 # Manual-trigger (workflow_dispatch with a tag) or tag push (v*). Builds the
 # sdist + the full abi3 wheel matrix, validates them, creates a GitHub
 # Release with the artifacts, and publishes to PyPI via TRUSTED PUBLISHING
-# (OIDC) as "python-cfg" — no credentials/tokens are stored in the repo.
+# (OIDC) as "conditional-method" — no credentials/tokens are stored in the repo.
 #
 # The package version is derived from the git tag by setuptools-scm
 # (dynamic versioning): tag v0.2.0 -> version 0.2.0.
 #
 # Trusted publishing setup (maintainer, one-time, on PyPI):
-#   1. Register the project "python-cfg" on PyPI (and/or TestPyPI).
+#   1. Register the project "conditional-method" on PyPI (and/or TestPyPI).
 #   2. Add a "publishing source": GitHub Actions, owner jymchng, repo
 #      conditional-method, workflow "release.yml", environment "release".
 #   3. The publish job below then authenticates via OIDC with no secrets.
@@ -59,8 +59,8 @@ jobs:
           print(f"sdist: {sd}")
           with tarfile.open(sd) as t:
               names = t.getnames()
-          # First entry is the sdist root dir, e.g. python_cfg-0.2.0
-          m = re.match(r"python_cfg-([^/]+)", names[0])
+          # First entry is the sdist root dir, e.g. conditional_method-0.2.0
+          m = re.match(r"conditional_method-([^/]+)", names[0])
           assert m, names[:5]
           print(f"version from tag: {m.group(1)}")
           EOF
@@ -206,7 +206,7 @@ jobs:
           gh release create "$TAG" \
             --draft \
             --generate-notes \
-            --title "python-cfg $TAG" \
+            --title "conditional-method $TAG" \
             --repo "${{ github.repository }}"
 
       - name: Upload artifacts to release
@@ -221,7 +221,7 @@ jobs:
           ls -1 dist/
 
   publish:
-    # Publish to PyPI ("python-cfg") via trusted publishing (OIDC).
+    # Publish to PyPI ("conditional-method") via trusted publishing (OIDC).
     needs: [build_sdist, build_wheels, build_pyodide_wheel]
     runs-on: ubuntu-latest
     environment:

@@ -1,6 +1,6 @@
 # Development
 
-Everything you need to develop `python-cfg` locally.
+Everything you need to develop `conditional-method` locally.
 
 ## Setup
 

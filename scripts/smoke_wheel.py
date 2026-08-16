@@ -1,4 +1,4 @@
-"""Smoke-test an installed python-cfg wheel (used by CI wheels.yml).
+"""Smoke-test an installed conditional-method wheel (used by CI wheels.yml).
 
 Run from a clean venv after ``pip install`` of a wheel::
 
@@ -32,4 +32,4 @@ assert _attr() == 1
 assert cm is conditional_method and cm is if_ and cm is cfg_deco
 assert cfg.__version__
 
-print(f"wheel smoke OK (python-cfg {cfg.__version__})")
+print(f"wheel smoke OK (conditional-method {cfg.__version__})")

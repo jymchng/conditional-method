@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to `python-cfg` are documented in this file.
+All notable changes to `conditional-method` are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -43,8 +43,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   empty-decorator cache bug).
 
 ### Changed
-- Project renamed from `conditional-method` to **`python-cfg`**;
-  import module is `cfg`.
+- Rebuilt as a production-ready package: the C extension (`cfg._c`) with
+  the `cfg` import module, published on PyPI as **`conditional-method`**.
 - Raised the C line coverage from ~84% to >91% via targeted error-path
   tests and `CFG_ALLOC_TEST_FAIL()` test-only reachability hooks.
 - Modernized tests for current CPython (`RuntimeError` → `TypeError`

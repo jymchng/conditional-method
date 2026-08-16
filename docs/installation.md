@@ -8,7 +8,7 @@
 ## Install from PyPI
 
 ```bash
-pip install python-cfg
+pip install conditional-method
 ```
 
 ## Install from source
@@ -30,7 +30,7 @@ print(cfg.__version__)  # e.g. 0.2.0.dev45
 
 ## Wheels
 
-`python-cfg` is a C extension built against the Python Limited API (abi3).
+`conditional-method` is a C extension built against the Python Limited API (abi3).
 One wheel per platform/architecture is published on PyPI with the tag
 `cp39-abi3`, meaning it installs and runs on **every** CPython 3.9+ release
 of that platform — no per-version rebuilds:

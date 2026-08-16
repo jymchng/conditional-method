@@ -1,5 +1,5 @@
 [project]
-name = "python-cfg"
+name = "conditional-method"
 dynamic = ["version"]
 description = "A decorator `@cfg` that selects a method implementation (among those that are identically named) for a class during class build time, leaving only the selected method in its attributes set when the class is built, i.e. 'well-formed'."
 readme = "README.md"

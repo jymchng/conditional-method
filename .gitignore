@@ -19,3 +19,4 @@ dist_logs/
 *.gcno
 *.gcda
 *.gcov
+_site/

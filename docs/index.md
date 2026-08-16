@@ -1,6 +1,6 @@
-# python-cfg
+# conditional-method
 
-`python-cfg` is a **zero-dependency, pure-C** Python library that lets you
+`conditional-method` is a **zero-dependency, pure-C** Python library that lets you
 select, at *class build time*, which of several identically-named method
 implementations survives on a class — based on a runtime, startup, or
 call-time condition.
@@ -34,7 +34,7 @@ print(worker.work())  # development (only ONE `work` survives on Worker)
 ## Installation
 
 ```bash
-pip install python-cfg
+pip install conditional-method
 ```
 
 The whole implementation is a C extension (`cfg._c`) built against the

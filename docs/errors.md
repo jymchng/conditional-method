@@ -1,6 +1,6 @@
 # Errors
 
-This page describes every error `python-cfg` can raise and when.
+This page describes every error `conditional-method` can raise and when.
 
 ## `TypeError: \`@conditional_method\` must be used as a decorator and \`condition\` must be specified ...`
 

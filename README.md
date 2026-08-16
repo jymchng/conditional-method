@@ -1,15 +1,15 @@
 <p align="center">
-  <a href="https://pypi.org/project/python-cfg"><img src="assets/python-cfg-logo.png" alt="python-cfg" width="200"></a>
+  <a href="https://pypi.org/project/conditional-method"><img src="assets/conditional-method-logo.png" alt="conditional-method" width="200"></a>
 </p>
 <p align="center">
     <em>Conditionally select which method implementation survives class creation — decided at runtime, at startup, or at class build time.</em>
 </p>
 <p align="center">
 <a href="https://github.com/jymchng/conditional-method/actions/workflows/ci.yml" target="_blank"><img src="https://github.com/jymchng/conditional-method/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-<a href="https://pypi.org/project/python-cfg" target="_blank"><img src="https://img.shields.io/pypi/v/python-cfg?color=blue" alt="PyPI version"></a>
-<a href="https://pypi.org/project/python-cfg" target="_blank"><img src="https://img.shields.io/pypi/pyversions/python-cfg.svg?color=blue" alt="Python versions"></a>
-<a href="https://pypi.org/project/python-cfg" target="_blank"><img src="https://img.shields.io/pypi/wheel/python-cfg.svg?color=blue" alt="Wheel"></a>
-<a href="https://pypi.org/project/python-cfg" target="_blank"><img src="https://img.shields.io/pypi/l/python-cfg.svg?color=blue" alt="License"></a>
+<a href="https://pypi.org/project/conditional-method" target="_blank"><img src="https://img.shields.io/pypi/v/conditional-method?color=blue" alt="PyPI version"></a>
+<a href="https://pypi.org/project/conditional-method" target="_blank"><img src="https://img.shields.io/pypi/pyversions/conditional-method.svg?color=blue" alt="Python versions"></a>
+<a href="https://pypi.org/project/conditional-method" target="_blank"><img src="https://img.shields.io/pypi/wheel/conditional-method.svg?color=blue" alt="Wheel"></a>
+<a href="https://pypi.org/project/conditional-method" target="_blank"><img src="https://img.shields.io/pypi/l/conditional-method.svg?color=blue" alt="License"></a>
 </p>
 
 ---
@@ -50,10 +50,10 @@ Python 3.9+ (CPython 3.9, 3.10, 3.11, 3.12, 3.13, 3.14).
 <div class="termy">
 
 ```console
-$ pip install python-cfg
+$ pip install conditional-method
 
 ---> 100%
-Successfully installed python-cfg
+Successfully installed conditional-method
 ```
 
 </div>
@@ -161,4 +161,4 @@ This project is licensed under the terms of the MIT license.
 - **Changelog**: [CHANGELOG.md](CHANGELOG.md)
 - **Security**: [SECURITY.md](SECURITY.md)
 - **Source**: <https://github.com/jymchng/conditional-method>
-- **PyPI**: <https://pypi.org/project/python-cfg>
+- **PyPI**: <https://pypi.org/project/conditional-method>

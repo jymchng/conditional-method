@@ -1,4 +1,4 @@
-"""python-cfg: conditional method/decorator selection.
+"""conditional-method: conditional method/decorator selection.
 
 Public API::
 
@@ -22,7 +22,7 @@ from ._c import (
 )
 
 try:
-    __version__: str = version("python-cfg")
+    __version__: str = version("conditional-method")
 except PackageNotFoundError:  # pragma: no cover - editable/source installs
     __version__ = "0.0.0+unknown"
 

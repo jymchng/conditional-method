@@ -1,8 +1,8 @@
 # FAQ
 
-## Why is it called `python-cfg` but I import `cfg`?
+## Why is it called `conditional-method` but I import `cfg`?
 
-`python-cfg` is the PyPI distribution name; `cfg` is the import module —
+`conditional-method` is the PyPI distribution name; `cfg` is the import module —
 same convention as e.g. `beautifulsoup4` → `bs4`.
 
 ## Is there a pure-Python fallback?

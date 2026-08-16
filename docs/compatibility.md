@@ -2,7 +2,7 @@
 
 ## Python versions
 
-`python-cfg` supports **CPython 3.9 through 3.14**. Because the extension is
+`conditional-method` supports **CPython 3.9 through 3.14**. Because the extension is
 built against the **Limited API / stable ABI (abi3)**, a single `cp39-abi3`
 wheel covers every CPython 3.9+ release — no per-version wheels are needed.
 
@@ -40,4 +40,4 @@ Wheels are published for:
 
 ## Dependencies
 
-`python-cfg` has **zero runtime dependencies**.
+`conditional-method` has **zero runtime dependencies**.

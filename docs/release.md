@@ -1,6 +1,6 @@
 # Release
 
-How `python-cfg` is released.
+How `conditional-method` is released.
 
 ## Versioning
 
@@ -24,7 +24,7 @@ A tag push (`v*`) — or a manual `workflow_dispatch` with a tag — triggers
    Windows AMD64/ARM64/x86). Every wheel must carry the `cp39-abi3` tag.
 3. **GitHub Release** — a draft release is created with the sdist + all
    wheels attached (SHA-256 integrity listing) and auto-generated notes.
-4. **PyPI** — all artifacts are published to **`python-cfg`** via
+4. **PyPI** — all artifacts are published to **`conditional-method`** via
    **trusted publishing** (OIDC, no hard-coded tokens), skipping
    already-uploaded files for idempotent re-runs.
 
@@ -34,14 +34,14 @@ before you tag.
 
 ## Trusted publishing (one-time setup)
 
-1. Register the project **`python-cfg`** on PyPI.
+1. Register the project **`conditional-method`** on PyPI.
 2. Add a publishing source: GitHub Actions, owner `jymchng`, repo
    `conditional-method`, workflow `release.yml`, environment `release`.
 3. Done — the publish job authenticates via OIDC with no secrets.
 
 ## PyPI
 
-- Project name: **`python-cfg`**
+- Project name: **`conditional-method`**
 - Import module: **`cfg`**
 
 ## Manual release (fallback)

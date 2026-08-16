@@ -1,4 +1,4 @@
-"""Standalone benchmark harness for python-cfg (pure-C implementation).
+"""Standalone benchmark harness for conditional-method (pure-C implementation).
 
 Reproducible timeit-based measurements of the C extension's conditional
 method/decorator machinery vs plain Python baselines. Results are written
@@ -218,7 +218,7 @@ def main() -> None:
     RESULTS_PATH.write_text(json.dumps(doc, indent=2) + "\n")
 
     # human-readable table
-    print(f"python-cfg {__version__} benchmarks ({N} loops, {REPEAT} repeats)")
+    print(f"conditional-method {__version__} benchmarks ({N} loops, {REPEAT} repeats)")
     print(f"env: {env['python']} on {env['machine']} ({env['platform'][:50]})")
     print("-" * 64)
     print(f"{'scenario':26} {'best us/op':>12} {'mean us/op':>12}")
