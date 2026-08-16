@@ -24,9 +24,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - CPython 3.9–3.14 cross-version support: `tests/_compat.py` handles the
-  `<3.13` `__set_name__` `RuntimeError` wrapping vs `3.13+` `TypeError`,
-  and the `AttributeError` vs `TypeError` context-manager-protocol
-  difference.
+  `<3.12` `__set_name__` `RuntimeError` wrapping vs `3.12+` `TypeError`,
+  and the `<3.11` `AttributeError` vs `3.11+` `TypeError`
+  context-manager-protocol difference.
 - README rewritten in a FastAPI-style layout with logo, badges, and
   quick examples.
 

@@ -17,16 +17,17 @@ wheel covers every CPython 3.9+ release — no per-version wheels are needed.
 Two CPython behaviors changed across the supported range; the test suite
 handles both (`tests/_compat.py`):
 
-1. **`__set_name__` error wrapping** — CPython < 3.13 wraps a `TypeError`
+1. **`__set_name__` error wrapping** — CPython < 3.12 wraps a `TypeError`
    raised by `__set_name__` in `RuntimeError: Error calling __set_name__
-   on ...`; 3.13+ propagates the `TypeError` directly. Your *code* is
-   unaffected either way — a false `@cfg` method makes class creation fail
-   — but if you catch these errors, match on both.
+   on ...`; 3.12+ propagates the `TypeError` directly (with the wrapper
+   text attached as a note). Your *code* is unaffected either way — a
+   false `@cfg` method makes class creation fail — but if you catch these
+   errors, match on both.
 
 2. **Missing context-manager protocol** — using an object without
    `__enter__`/`__exit__` as a context manager raises `AttributeError` on
-   < 3.13 and `TypeError` (`does not support the context manager protocol`)
-   on 3.13+.
+   < 3.11 and `TypeError` (`does not support the context manager protocol`)
+   on 3.11+.
 
 ## Platforms
 

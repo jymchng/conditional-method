@@ -203,10 +203,10 @@ class TestConditionalMethods:
                     return "This should not be used as well"
 
         # Check that the error message mentions the condition issue.
-        # <3.13 wraps the __set_name__ TypeError in a RuntimeError; the
-        # original message is on __cause__.
+        # <3.12 wraps the __set_name__ TypeError in a RuntimeError; the
+        # original message is on __cause__. 3.12+ propagates the TypeError.
         message = str(excinfo.value)
-        if sys.version_info < (3, 13):
+        if sys.version_info < (3, 12):
             assert "Error calling __set_name__" in message
             assert "None of the conditions is true" in str(excinfo.value.__cause__)
         else:
