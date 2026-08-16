@@ -43,6 +43,7 @@ dev = [
 test = [
     "pytest>=8.3.4",
     "pytest-benchmark>=4.0.0",
+    "hypothesis>=6.100",
 ]
 examples = [
     "fastapi>=0.115.10",

@@ -775,7 +775,16 @@ static PyObject *cfg_attr_apply_decorators(PyObject *func, PyObject *decorators,
     goto error;
   }
   if (n == 0) {
+    /* Cache the undecorated function just like any other true result, so a
+       later false condition for the same qualname reuses it (parity with
+       cm's cache semantics). */
     Py_INCREF(func);
+    if (f_qualname != NULL &&
+        (PyDict_SetItem(_cfg_attr_cache, f_qualname, func) < 0 ||
+         CFG_ALLOC_TEST_FAIL())) {
+      Py_DECREF(func);
+      return NULL;
+    }
     return func;
   }
   result = func;
