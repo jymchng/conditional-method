@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-08-16
+
+### Changed
+- **Import module renamed to `conditional_method`** (the distribution was
+  already `conditional-method`). The decorator is `@cfg` with aliases
+  `@cm`/`@if_`; there is **no** `@conditional_method` decorator (the old
+  callable alias was removed and the error text now says "`@cfg` must be
+  used as a decorator").
+- The old `cfg` module is kept as a thin **compatibility shim** re-exporting
+  from `conditional_method` (incl. `_c`, `__version__`, `__all__`), so code
+  written against the 0.2.0 module keeps working.
+- C extension path is `conditional_method._c`; gate scripts and CI point at
+  the renamed source.
+- Canonical form everywhere: `from conditional_method import cfg`.
+
 ## [0.2.0] - 2026-08-16
 
 ### Added

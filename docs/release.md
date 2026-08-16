@@ -42,7 +42,7 @@ before you tag.
 ## PyPI
 
 - Project name: **`conditional-method`**
-- Import module: **`cfg`**
+- Import module: **`conditional_method`** (legacy shim: `cfg`)
 
 ## Manual release (fallback)
 
