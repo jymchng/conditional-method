@@ -154,10 +154,49 @@ jobs:
           # but Pyodide was built with Emscripten v5.0.3".
           pyodide-version: 314.0.3
 
-      - name: Verify pyodide wheel
+      - name: Retag pyodide wheel for micropip (emscripten_<ver>_wasm32)
+        env:
+          # Real Emscripten version of the pinned pyodide xbuildenv. Used as a
+          # fallback if the cache lookup below finds nothing; keep in sync with
+          # pyodide-version above.
+          PYODIDE_EMSCRIPTEN_VERSION: "5.0.3"
         run: |
-          ls -la dist/
-          test -n "$(ls dist/*emscripten*.whl 2>/dev/null || echo '')" || { echo "no emscripten wheel produced"; exit 1; }
+          set -euo pipefail
+          # Derive the Emscripten version from the xbuildenv that cibuildwheel
+          # just installed (authoritative: it is the exact toolchain the wheel
+          # was compiled with). Fall back to the env var above.
+          # NOTE: keep '*314.0.3*' in sync with pyodide-version above.
+          MKFILE=$(find "$HOME/.cache/cibuildwheel" -type f -name Makefile.envs \
+            -path '*pyodide-build-*' -path '*314.0.3*' \
+            -path '*/xbuildenv/pyodide-root/Makefile.envs' 2>/dev/null | head -n1 || true)
+          if [ -n "$MKFILE" ]; then
+            PYODIDE_EMSCRIPTEN_VERSION=$(sed -n 's/^export *PYODIDE_EMSCRIPTEN_VERSION?*=//p' "$MKFILE" \
+              | tr -d "\"'" | tail -n1)
+          fi
+          echo "Emscripten version: ${PYODIDE_EMSCRIPTEN_VERSION:-<unset>}"
+          # pyodide-build tags wheels pyemscripten_<abi>_wasm32, but micropip's
+          # platform_to_version() only strips the emscripten_ prefix -> the tag
+          # must be emscripten_<real_emscripten_version>_wasm32 to install.
+          python scripts/retag_pyodide_wheel.py \
+            --emscripten-version "$PYODIDE_EMSCRIPTEN_VERSION" dist/*.whl
+          # Drop the original pyemscripten_*_wasm32 wheel (micropip rejects it).
+          rm -f dist/*pyemscripten*.whl
+
+      - name: Verify pyodide wheel tag (must be emscripten_*_wasm32)
+        run: |
+          python - <<'EOF'
+          import glob, zipfile
+          wheels = [f for f in glob.glob("dist/*.whl") if "emscripten" in f]
+          assert len(wheels) == 1, f"expected exactly one emscripten wheel, got {wheels}"
+          w = wheels[0]
+          assert "pyemscripten" not in w, f"wheel still tagged pyemscripten: {w}"
+          with zipfile.ZipFile(w) as z:
+              meta = [n for n in z.namelist() if n.endswith("WHEEL")][0]
+              tag = z.read(meta).decode()
+          assert "pyemscripten" not in tag, f"WHEEL still tagged pyemscripten:\n{tag}"
+          assert "emscripten_" in tag, f"no emscripten tag in WHEEL:\n{tag}"
+          print(f"OK: {w}")
+          EOF
 
       - uses: actions/upload-artifact@v4
         with:
@@ -193,7 +232,7 @@ jobs:
           assert any(f.endswith(".tar.gz") for f in files), "missing sdist"
           whls = [f for f in files if f.endswith(".whl")]
           assert len(whls) >= 10, f"expected >=10 wheels, got {len(whls)}"
-          assert any("emscripten" in f for f in whls), "missing pyodide wheel"
+          assert any("emscripten" in f and "pyemscripten" not in f for f in whls), "missing correctly-tagged pyodide wheel"
           # Every native wheel must carry the cp39-abi3 tag (stable ABI).
           for w in whls:
               if "emscripten" in w:
