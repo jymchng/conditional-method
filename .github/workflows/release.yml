@@ -161,12 +161,15 @@ jobs:
                   assert "cp39-abi3" in tag, f"bad tag in {w}:\n{tag}"
           EOF
 
-      - uses: softprops/action-gh-release@v2.2.0
-        with:
-          tag_name: ${{ inputs.tag || github.ref_name }}
-          files: dist/*
-          draft: true
-          generate_release_notes: true
+      - name: Create GitHub Release (draft)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${{ inputs.tag || github.ref_name }}"
+          gh release create "$TAG" dist/* \
+            --draft \
+            --generate-notes \
+            --repo "${{ github.repository }}"
 
   publish:
     # Publish to PyPI ("python-cfg") via trusted publishing (OIDC).
