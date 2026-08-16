@@ -1,6 +1,10 @@
 import os
+import sys
+from functools import lru_cache, wraps
+
 import pytest
-from functools import wraps, lru_cache
+
+from _compat import raises_set_name_error
 from cfg import cfg_attr
 
 
@@ -255,7 +259,7 @@ class TestCfgAttr:
         assert TestClass.test_method() == "static_result"
 
     def test_with_class_method_false_condition(self):
-        with pytest.raises(TypeError):
+        with raises_set_name_error():
 
             class TestClass:
                 @cfg_attr(condition=False, decorators=[add_prefix("method")])

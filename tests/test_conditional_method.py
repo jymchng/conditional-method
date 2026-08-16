@@ -1,5 +1,7 @@
 import os
+
 import pytest
+
 from cfg import cfg
 
 ENV_KEY = "_conditional_method_env_"
@@ -19,33 +21,23 @@ def test_conditional_method_with_debug_env_var_normal_class(debug_env_var_value)
         def chosen_tuesday(self, one_or_two: int):
             return f"Tuesday::Two {one_or_two}"
 
-        @cfg(
-            condition=lambda f: os.environ.get(ENV_KEY, "False") == "True"
-        )
+        @cfg(condition=lambda f: os.environ.get(ENV_KEY, "False") == "True")
         def monday(self, one_or_two: int):
             return f"Monday::One {one_or_two}"
 
-        @cfg(
-            condition=lambda f: os.environ.get(ENV_KEY, "False") == "True"
-        )
+        @cfg(condition=lambda f: os.environ.get(ENV_KEY, "False") == "True")
         def monday(self, one_or_two: int):
             return f"Monday::Two {one_or_two}"
 
-        @cfg(
-            condition=lambda f: os.environ.get(ENV_KEY, "False") == "False"
-        )
+        @cfg(condition=lambda f: os.environ.get(ENV_KEY, "False") == "False")
         def tuesday(self, one_or_two: int):
             return f"Tuesday::One {one_or_two}"
 
-        @cfg(
-            condition=lambda f: os.environ.get(ENV_KEY, "False") == "False"
-        )
+        @cfg(condition=lambda f: os.environ.get(ENV_KEY, "False") == "False")
         def tuesday(self, one_or_two: int):
             return f"Tuesday::Three {one_or_two}"
 
-        @cfg(
-            condition=lambda f: os.environ.get(ENV_KEY, "False") == "True"
-        )
+        @cfg(condition=lambda f: os.environ.get(ENV_KEY, "False") == "True")
         def tuesday(self, one_or_two: int):
             return f"Tuesday::Four {one_or_two}"
 
@@ -70,30 +62,22 @@ def test_conditional_method_with_debug_env_var_normal_class_with_classmethod(
         def chosen_tuesday(cls, one_or_two: int):
             return f"Tuesday::Two {one_or_two}"
 
-        @cfg(
-            condition=lambda f: os.environ.get(ENV_KEY, "False") == "True"
-        )
+        @cfg(condition=lambda f: os.environ.get(ENV_KEY, "False") == "True")
         @classmethod
         def monday(cls, one_or_two: int):
             return f"Monday::One {one_or_two}"
 
-        @cfg(
-            condition=lambda f: os.environ.get(ENV_KEY, "False") == "True"
-        )
+        @cfg(condition=lambda f: os.environ.get(ENV_KEY, "False") == "True")
         @classmethod
         def monday(cls, one_or_two: int):
             return f"Monday::Two {one_or_two}"
 
-        @cfg(
-            condition=lambda f: os.environ.get(ENV_KEY, "False") == "False"
-        )
+        @cfg(condition=lambda f: os.environ.get(ENV_KEY, "False") == "False")
         @classmethod
         def tuesday(cls, one_or_two: int):
             return f"Tuesday::One {one_or_two}"
 
-        @cfg(
-            condition=lambda f: os.environ.get(ENV_KEY, "False") == "True"
-        )
+        @cfg(condition=lambda f: os.environ.get(ENV_KEY, "False") == "True")
         @classmethod
         def tuesday(cls, one_or_two: int):
             return f"Tuesday::Three {one_or_two}"
@@ -114,37 +98,27 @@ def test_conditional_method_with_debug_env_var_normal_class_with_staticmethod(
         def chosen_tuesday(one_or_two: int):
             return f"Tuesday::Two {one_or_two}"
 
-        @cfg(
-            condition=lambda f: os.environ.get(ENV_KEY, "False") == "True"
-        )
+        @cfg(condition=lambda f: os.environ.get(ENV_KEY, "False") == "True")
         @staticmethod
         def monday(one_or_two: int):
             return f"Monday::One {one_or_two}"
 
-        @cfg(
-            condition=lambda f: os.environ.get(ENV_KEY, "False") == "True"
-        )
+        @cfg(condition=lambda f: os.environ.get(ENV_KEY, "False") == "True")
         @staticmethod
         def monday(one_or_two: int):
             return f"Monday::Two {one_or_two}"
 
-        @cfg(
-            condition=lambda f: os.environ.get(ENV_KEY, "False") == "False"
-        )
+        @cfg(condition=lambda f: os.environ.get(ENV_KEY, "False") == "False")
         @staticmethod
         def tuesday(one_or_two: int):
             return f"Tuesday::One {one_or_two}"
 
-        @cfg(
-            condition=lambda f: os.environ.get(ENV_KEY, "False") == "False"
-        )
+        @cfg(condition=lambda f: os.environ.get(ENV_KEY, "False") == "False")
         @staticmethod
         def tuesday(one_or_two: int):
             return f"Tuesday::Three {one_or_two}"
 
-        @cfg(
-            condition=lambda f: os.environ.get(ENV_KEY, "False") == "True"
-        )
+        @cfg(condition=lambda f: os.environ.get(ENV_KEY, "False") == "True")
         @staticmethod
         def tuesday(one_or_two: int):
             return f"Tuesday::Four {one_or_two}"
@@ -166,37 +140,27 @@ def test_conditional_method_with_debug_env_var_normal_class_with_property(
     assert os.environ.get(ENV_KEY, "False") == "True"
 
     class DoSomeWorkClass:
-        @cfg(
-            condition=lambda f: os.environ.get(ENV_KEY, "False") == "True"
-        )
+        @cfg(condition=lambda f: os.environ.get(ENV_KEY, "False") == "True")
         @property
         def monday(self):
             return "Monday::One"
 
-        @cfg(
-            condition=lambda f: os.environ.get(ENV_KEY, "False") == "True"
-        )
+        @cfg(condition=lambda f: os.environ.get(ENV_KEY, "False") == "True")
         @property
         def monday(self):
             return "Monday::Two"
 
-        @cfg(
-            condition=lambda f: os.environ.get(ENV_KEY, "False") == "False"
-        )
+        @cfg(condition=lambda f: os.environ.get(ENV_KEY, "False") == "False")
         @property
         def tuesday(self):
             return "Tuesday::One"
 
-        @cfg(
-            condition=lambda f: os.environ.get(ENV_KEY, "False") == "True"
-        )
+        @cfg(condition=lambda f: os.environ.get(ENV_KEY, "False") == "True")
         @property
         def tuesday(self):
             return "Tuesday::Two"
 
-        @cfg(
-            condition=lambda f: os.environ.get(ENV_KEY, "False") == "False"
-        )
+        @cfg(condition=lambda f: os.environ.get(ENV_KEY, "False") == "False")
         @property
         def tuesday(self):
             return "Tuesday::Three"

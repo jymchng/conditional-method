@@ -1,5 +1,6 @@
-from cfg import if_, cm
 import os
+
+from cfg import cm, if_
 
 os.environ["ENV"] = "LOCAL"
 

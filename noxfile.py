@@ -1,10 +1,11 @@
-from functools import wraps
 import contextlib
+import shutil
+from functools import wraps
+
 import nox
 import nox.command
-from nox.sessions import Session
 from nox import session as nox_session
-import shutil
+from nox.sessions import Session
 
 try:
     import tomli as tomllib
@@ -16,16 +17,15 @@ except ImportError:
 TYPE_CHECKING = False
 TYPE_EXTENSIONS_IMPORTED = False
 if TYPE_CHECKING:
+    from collections.abc import Sequence
     from typing import (
         Any,
         Callable,
-        Sequence,
+        Literal,
+        Optional,
         TypedDict,
         Union,
-        Optional,
-        Dict,
         overload,
-        Literal,
     )
 
     try:
@@ -36,8 +36,8 @@ if TYPE_CHECKING:
         pass
 
 if TYPE_EXTENSIONS_IMPORTED and TYPE_CHECKING:
-    from typing_extensions import ParamSpec
     from nox.sessions import Func
+    from typing_extensions import ParamSpec
 
     P = ParamSpec("P")
 
@@ -78,7 +78,7 @@ if TYPE_EXTENSIONS_IMPORTED and TYPE_CHECKING:
         """
 
         dependency_group: NotRequired[Optional[str]]
-        environment_mapping: NotRequired[Optional[Dict[str, str]]]
+        environment_mapping: NotRequired[Optional[dict[str, str]]]
         default_posargs: NotRequired[Optional[Sequence[str]]]
 
     class SessionParams(NoxSessionParams, ExtraSessionParams):
@@ -89,7 +89,7 @@ if TYPE_EXTENSIONS_IMPORTED and TYPE_CHECKING:
         f: Callable[..., Any],
         /,
         dependency_group: str = None,
-        environment_mapping: "Dict[str, str]" = {},
+        environment_mapping: "dict[str, str]" = {},
         default_posargs: "Sequence[str]" = (),
         **kwargs: NoxSessionParams,
     ) -> Callable[[], Any]: ...
@@ -99,7 +99,7 @@ if TYPE_EXTENSIONS_IMPORTED and TYPE_CHECKING:
         f: None = None,
         /,
         dependency_group: str = None,
-        environment_mapping: "Dict[str, str]" = {},
+        environment_mapping: "dict[str, str]" = {},
         default_posargs: "Sequence[str]" = (),
         **kwargs: NoxSessionParams,
     ) -> Callable[[Callable[..., Any]], Callable[..., Any]]: ...
@@ -131,7 +131,7 @@ class AlteredSession(Session):
         self,
         session: Session,
         dependency_group: str,
-        environment_mapping: "Dict[str, str]",
+        environment_mapping: "dict[str, str]",
         default_posargs: "Sequence[str]",
     ):
         super().__init__(session._runner)
@@ -145,7 +145,7 @@ class AlteredSession(Session):
             uv_install_group_dependencies(self, self.dependency_group)
         if self.session.posargs is not None:
             args = (*args, *(self.session.posargs or self.default_posargs))
-        env: "Dict[str, str]" = kwargs.pop("env", {})
+        env: dict[str, str] = kwargs.pop("env", {})
         env.update(self.environment_mapping)
         kwargs["env"] = env
         return self.session.run(*args, **kwargs)
@@ -155,7 +155,7 @@ def session(
     f: "Callable[..., Any]" = None,
     /,
     dependency_group: str = None,
-    environment_mapping: "Dict[str, str]" = {},
+    environment_mapping: "dict[str, str]" = {},
     default_posargs: "Sequence[str]" = (),
     **kwargs: "NoxSessionParams",
 ) -> "Callable[..., Any]":
@@ -217,7 +217,7 @@ def test(session: AlteredSession):
 def alter_session(
     session: AlteredSession,
     dependency_group: str = None,
-    environment_mapping: "Dict[str, str]" = {},
+    environment_mapping: "dict[str, str]" = {},
     default_posargs: "Sequence[str]" = (),
     **kwargs: "NoxSessionParams",
 ):
@@ -399,8 +399,8 @@ def test_development(session: Session):
 def format(session: Session):
     # clang-format only c files
     # use glob to find all c files
-    import os
     import glob
+    import os
 
     # Check if the directory exists before trying to format files
     c_files_path = "src/cfg"
@@ -465,9 +465,9 @@ def benchmark(session: Session):
 def list_dist_files(session: Session):
     """List all files packaged in the latest distribution."""
     import glob
+    import os
     import zipfile
     from pathlib import Path
-    import os
 
     # Find the latest wheel file in the dist directory
     wheel_files = sorted(glob.glob("dist/*.whl"), key=os.path.getmtime, reverse=True)
@@ -546,6 +546,7 @@ def test_client_install_run(session: Session):
     # Find the tarball with the largest semver version
     import glob
     import re
+
     from packaging import version
 
     # Get all tarball files

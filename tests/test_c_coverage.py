@@ -6,19 +6,17 @@ the C module that the main test suite does not reach.
 
 import gc
 import os
-import subprocess
 import sys
 
 import pytest
 
+from _compat import raises_set_name_error
 from cfg import (
     _get_mod_qual_func_name,
     cfg,
     cfg_attr,
     cm,
     conditional_method,
-    debug,
-    debug_enabled,
     if_,
 )
 
@@ -195,8 +193,9 @@ def test_type_error_raiser_lifecycle():
     with pytest.raises(TypeError):
         raiser()
 
-    # __set_name__ raises at class build
-    with pytest.raises(TypeError):
+    # __set_name__ raises at class build (TypeError on 3.13+, RuntimeError wrap earlier)
+    with raises_set_name_error():
+
         class C:
             m = _TypeErrorRaiser()
 
@@ -248,6 +247,7 @@ def test_raise_exec_with_qualname():
 
 def test_cm_inner_typeerror_wrap():
     """cm callable condition raising TypeError gets wrapped."""
+
     def f():
         return 1
 
@@ -260,6 +260,7 @@ def test_cm_inner_typeerror_wrap():
 
 def test_get_func_name_fallback_loop_and_error():
     """_get_func_name __wrapped__ fallback loop + TypeError when nothing found."""
+
     def base():
         return 1
 
@@ -296,6 +297,7 @@ def test_cfg_attr_wrapper_bad_closure():
 
 def test_cfg_attr_callable_condition_valueerror_propagates():
     """cfg_attr callable condition raising ValueError propagates unchanged."""
+
     def f():
         return 1
 
@@ -308,6 +310,7 @@ def test_cfg_attr_callable_condition_valueerror_propagates():
 
 def test_cfg_attr_decorator_raises():
     """cfg_attr true branch: a decorator that raises propagates the error."""
+
     def boom(fn):
         raise RuntimeError("decorator boom")
 
@@ -320,6 +323,7 @@ def test_cfg_attr_decorator_raises():
 
 def test_cfg_attr_callable_condition_typeerror_wrap():
     """cfg_attr callable condition raising TypeError gets wrapped."""
+
     def f():
         return 1
 
@@ -332,6 +336,7 @@ def test_cfg_attr_callable_condition_typeerror_wrap():
 
 def test_cfg_attr_true_decorators_nested_apply():
     """True branch applies decorators in listed order (outermost first)."""
+
     def add_pre(fn):
         def w(*a, **k):
             return "pre_" + fn(*a, **k)

@@ -14,7 +14,6 @@ from __future__ import annotations
 
 import json
 import platform
-import sys
 import timeit
 from functools import wraps
 from pathlib import Path

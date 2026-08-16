@@ -64,6 +64,7 @@ def test_sweep_raiser_with_qualnames():
     qualname in f_qualnames, so the PyIter_Next/PyList_Append branches of
     _raise_typeerror run (and their allocation-failure branches fire).
     """
+
     def scenario():
         raiser = c.cm(lambda: 1, condition=False)
         try:
@@ -138,12 +139,20 @@ def test_cm_wrapper_null_self():
 
     api = ctypes.pythonapi
     base = id(c._cm_wrapper)
-    m_ml = ctypes.c_void_p.from_address(
-        base + 2 * ctypes.sizeof(ctypes.c_void_p)
-    ).value
-    api.PyCFunction_New.restype = ctypes.c_void_p
-    api.PyCFunction_New.argtypes = [ctypes.c_void_p, ctypes.c_void_p]
-    ptr = api.PyCFunction_New(ctypes.c_void_p(m_ml), None)
+    m_ml = ctypes.c_void_p.from_address(base + 2 * ctypes.sizeof(ctypes.c_void_p)).value
+
+    # PyCFunction_New is not exported on CPython 3.9 (macro only); fall back
+    # to the exported PyCFunction_NewEx (ml, self, module).
+    if hasattr(api, "PyCFunction_NewEx"):
+        new_fn = api.PyCFunction_NewEx
+        new_fn.restype = ctypes.c_void_p
+        new_fn.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]
+        ptr = new_fn(ctypes.c_void_p(m_ml), None, None)
+    else:
+        new_fn = api.PyCFunction_New
+        new_fn.restype = ctypes.c_void_p
+        new_fn.argtypes = [ctypes.c_void_p, ctypes.c_void_p]
+        ptr = new_fn(ctypes.c_void_p(m_ml), None)
     assert ptr
     fn = ctypes.cast(ptr, ctypes.py_object).value
     with pytest.raises(RuntimeError, match="No condition found"):
@@ -159,6 +168,7 @@ def test_raiser_surrogate_qualname():
 
 def test_debug_str_raises():
     """cfg.debug: PyObject_Str failing (obj __str__ raises) -> return NULL."""
+
     class S:
         def __str__(self):
             raise RuntimeError("boom-str")
@@ -177,6 +187,7 @@ def test_debug_str_raises():
 
 def test_debug_surrogate():
     """cfg.debug with an unencodable object hits the AsUTF8 NULL branch."""
+
     class S:
         def __str__(self):
             return "\ud800"
@@ -245,6 +256,7 @@ def test_cm_inner_one_arg():
 
 def test_cm_callable_cond_broken_bool():
     """cm callable condition returning an object with a raising __bool__."""
+
     class BrokenBool:
         def __bool__(self):
             raise RuntimeError("bb")
@@ -261,6 +273,7 @@ def test_cfg_attr_wrapper_no_args():
 
 def test_cfg_attr_decorators_broken_len():
     """decorators whose __len__ raises -> PySequence_Length error."""
+
     class BrokenLen:
         def __len__(self):
             raise RuntimeError("len boom")
@@ -274,6 +287,7 @@ def test_cfg_attr_decorators_broken_len():
 
 def test_cfg_attr_decorators_broken_getitem():
     """decorators whose __getitem__ raises -> PySequence_GetItem error."""
+
     class BrokenGet:
         def __len__(self):
             return 1
@@ -293,6 +307,7 @@ def test_cfg_attr_unexpected_kwarg():
 
 def test_cfg_attr_callable_cond_broken_bool():
     """cfg_attr callable condition returning a broken-bool object."""
+
     class BrokenBool:
         def __bool__(self):
             raise RuntimeError("bb2")
@@ -303,6 +318,7 @@ def test_cfg_attr_callable_cond_broken_bool():
 
 def test_cfg_attr_noncall_cond_broken_bool():
     """cfg_attr non-callable condition with broken __bool__."""
+
     class BrokenBool:
         def __bool__(self):
             raise RuntimeError("bb3")

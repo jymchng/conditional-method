@@ -1,10 +1,13 @@
 import os
 import sys
+from functools import cache, wraps
+
 import pytest
-from functools import wraps, lru_cache
+
+from _compat import raises_missing_context_manager, raises_set_name_error
 
 # Import the cfg function
-from cfg import cfg, cfg, if_
+from cfg import cfg, if_
 
 
 def add_prefix_to_yielded(prefix):
@@ -231,7 +234,7 @@ def test_cfg_with_class_method():
 
 
 def test_cfg_with_class_method_false_condition():
-    with pytest.raises(TypeError):
+    with raises_set_name_error():
 
         class TestClass:
             @cfg(condition=False)
@@ -432,7 +435,7 @@ def test_cfg_with_conditional_inheritance():
         def method(self):
             return "base_true"
 
-    with pytest.raises(TypeError):
+    with raises_set_name_error():
 
         class DerivedClass(BaseClass):
             @cfg(condition=False)
@@ -579,7 +582,7 @@ def test_cfg_with_multiple_decorators():
 def test_cfg_with_lru_cache():
     calls = 0
 
-    @lru_cache(maxsize=None)
+    @cache
     @cfg(condition=True)
     def cached_func(n):
         nonlocal calls
@@ -1348,7 +1351,7 @@ def test_cfg_without_brackets_with_lru_cache():
 
     with pytest.raises(TypeError):
 
-        @lru_cache(maxsize=None)
+        @cache
         @cfg
         def cached_func(n):
             nonlocal calls
@@ -1668,9 +1671,8 @@ def test_cfg_without_brackets_with_context_manager():
             def __exit__(self, exc_type, exc_val, exc_tb):
                 return False
 
-    with pytest.raises(TypeError):
-        with TestContextManager() as result:
-            assert result == "entered"
+    with raises_missing_context_manager(), TestContextManager() as result:
+        assert result == "entered"
 
 
 def test_cfg_without_brackets_with_metaclass():

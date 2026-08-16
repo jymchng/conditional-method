@@ -1,9 +1,10 @@
-import pytest
 import os
-from fastapi.testclient import TestClient
-from fastapi_auth import app, create_access_token, get_secret_key, JWT_ALGORITHM
 from datetime import datetime, timedelta
+
 import jwt
+import pytest
+from fastapi.testclient import TestClient
+from fastapi_auth import JWT_ALGORITHM, app, create_access_token, get_secret_key
 
 ENVIRONMENT_KEY = "ENVIRONMENT_KEY"
 

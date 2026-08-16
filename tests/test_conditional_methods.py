@@ -1,5 +1,9 @@
 import os
+import sys
+
 import pytest
+
+from _compat import raises_set_name_error
 from cfg import cfg
 
 
@@ -29,15 +33,11 @@ class TestConditionalMethods:
             def monday(self):
                 return "Instance of A " + "A::Monday"
 
-            @cfg(
-                condition=lambda f: os.environ.get("DEBUG", "False") == "False"
-            )
+            @cfg(condition=lambda f: os.environ.get("DEBUG", "False") == "False")
             def monday(self):
                 return "Instance of A " + "A::Another Monday"
 
-            @cfg(
-                condition=lambda f: os.environ.get("DEBUG", "False") == "True"
-            )
+            @cfg(condition=lambda f: os.environ.get("DEBUG", "False") == "True")
             @classmethod
             def monday(cls):
                 return "Class of A " + "A::Yet Another Monday"
@@ -72,21 +72,15 @@ class TestConditionalMethods:
 
             __slots__ = ()
 
-            @cfg(
-                condition=lambda f: os.environ.get("DEBUG", "False") == "False"
-            )
+            @cfg(condition=lambda f: os.environ.get("DEBUG", "False") == "False")
             def monday(self):
                 return "Instance of B" + "B::Monday"
 
-            @cfg(
-                condition=lambda f: os.environ.get("DEBUG", "False") == "True"
-            )
+            @cfg(condition=lambda f: os.environ.get("DEBUG", "False") == "True")
             def monday(self):
                 return "Instance of B" + "B::Another Monday"
 
-            @cfg(
-                condition=lambda f: os.environ.get("DEBUG", "False") == "False"
-            )
+            @cfg(condition=lambda f: os.environ.get("DEBUG", "False") == "False")
             def monday(self):
                 return "Instance of B" + "B::Yet Another Monday"
 
@@ -113,22 +107,16 @@ class TestConditionalMethods:
 
             __slots__ = ()
 
-            @cfg(
-                condition=lambda f: os.environ.get("DEBUG", "False") == "False"
-            )
+            @cfg(condition=lambda f: os.environ.get("DEBUG", "False") == "False")
             def monday(self):
                 return "Instance of C" + "C::Monday"
 
-            @cfg(
-                condition=lambda f: os.environ.get("DEBUG", "False") == "True"
-            )
+            @cfg(condition=lambda f: os.environ.get("DEBUG", "False") == "True")
             @staticmethod
             def monday():
                 return "Staticmethod of C" + "C::Another Monday"
 
-            @cfg(
-                condition=lambda f: os.environ.get("DEBUG", "False") == "False"
-            )
+            @cfg(condition=lambda f: os.environ.get("DEBUG", "False") == "False")
             def monday(self):
                 return "Instance of C" + "C:: Yet Monday"
 
@@ -155,15 +143,11 @@ class TestConditionalMethods:
 
             __slots__ = ()
 
-            @cfg(
-                condition=lambda f: os.environ.get("DEBUG", "False") == "False"
-            )
+            @cfg(condition=lambda f: os.environ.get("DEBUG", "False") == "False")
             def monday(self):
                 return "Instance of D" + "D::Monday"
 
-            @cfg(
-                condition=lambda f: os.environ.get("DEBUG", "False") == "True"
-            )
+            @cfg(condition=lambda f: os.environ.get("DEBUG", "False") == "True")
             def monday(self):
                 return "Instance of D" + "D::Another Monday"
 
@@ -201,8 +185,9 @@ class TestConditionalMethods:
     def test_all_methods_with_false_condition(self):
         """Test a class where all methods are decorated with False condition"""
 
-        # This should raise a RuntimeError because no condition is True
-        with pytest.raises(TypeError) as excinfo:
+        # This should raise (RuntimeError wrapping __set_name__ on <3.13,
+        # TypeError on 3.13+) because no condition is True
+        with raises_set_name_error() as excinfo:
 
             class AllFalseMethods:
                 @cfg(condition=False)
@@ -217,5 +202,12 @@ class TestConditionalMethods:
                 def method3(self):
                     return "This should not be used as well"
 
-        # Check that the error message mentions the condition issue
-        assert "None of the conditions is true" in str(excinfo.value)
+        # Check that the error message mentions the condition issue.
+        # <3.13 wraps the __set_name__ TypeError in a RuntimeError; the
+        # original message is on __cause__.
+        message = str(excinfo.value)
+        if sys.version_info < (3, 13):
+            assert "Error calling __set_name__" in message
+            assert "None of the conditions is true" in str(excinfo.value.__cause__)
+        else:
+            assert "None of the conditions is true" in message

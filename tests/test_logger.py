@@ -14,8 +14,9 @@ class TestLogger:
         original = os.environ.get(ENV_KEY)
         try:
             os.environ.pop(ENV_KEY, None)
-            import cfg
             import importlib
+
+            import cfg
 
             importlib.reload(cfg)
             assert cfg.debug_enabled() is False
@@ -28,8 +29,9 @@ class TestLogger:
         original = os.environ.get(ENV_KEY)
         try:
             os.environ[ENV_KEY] = "true"
-            import cfg
             import importlib
+
+            import cfg
 
             importlib.reload(cfg)
             assert cfg.debug_enabled() is True
@@ -44,8 +46,9 @@ class TestLogger:
         original = os.environ.get(ENV_KEY)
         try:
             os.environ.pop(ENV_KEY, None)
-            import cfg
             import importlib
+
+            import cfg
 
             importlib.reload(cfg)
             assert cfg.debug("hello") is None
@@ -59,11 +62,7 @@ class TestLogger:
         original = os.environ.get(ENV_KEY)
         try:
             os.environ[ENV_KEY] = "true"
-            code = (
-                "import cfg; "
-                "cfg.debug('marker-xyz'); "
-                "print('done')"
-            )
+            code = "import cfg; cfg.debug('marker-xyz'); print('done')"
             proc = subprocess.run(
                 [sys.executable, "-c", code],
                 capture_output=True,

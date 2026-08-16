@@ -32,6 +32,7 @@ fallback_version = "0.2.0.dev0"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra"
+pythonpath = ["tests"]
 
 [dependency-groups]
 dev = [
@@ -59,11 +60,18 @@ build = [
 line-length = 88
 target-version = "py39"
 src = ["src", "tests"]
+# examples/ is demo code using intentional FastAPI idioms (Depends() in
+# defaults, B904/B008/E501/E402); tests/ is excluded from lint by design.
+exclude = ["tests/", "examples/"]
 
 [tool.ruff.lint]
-exclude = ["tests/"]
 ignore = ["F811"]
 select = ["E", "F", "W", "I", "UP", "B", "SIM"]
+
+[tool.ruff.lint.per-file-ignores]
+# noxfile.py is a build-tooling file: mutable `{}` sentinel defaults (B006),
+# an unused loop var (B007) and long logging lines (E501) are intentional.
+"noxfile.py" = ["B006", "B007", "E501"]
 
 [tool.mypy]
 python_version = "3.10"

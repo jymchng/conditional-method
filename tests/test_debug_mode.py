@@ -14,8 +14,9 @@ class TestDebugMode:
         original = os.environ.get(ENV_KEY)
         try:
             os.environ[ENV_KEY] = "true"
-            import cfg
             import importlib
+
+            import cfg
 
             importlib.reload(cfg)
             assert cfg.debug_enabled() is True
@@ -40,8 +41,9 @@ class TestDebugMode:
         original = os.environ.get(ENV_KEY)
         try:
             os.environ[ENV_KEY] = "false"
-            import cfg
             import importlib
+
+            import cfg
 
             importlib.reload(cfg)
             assert cfg.debug_enabled() is False
@@ -61,13 +63,13 @@ class TestDebugMode:
 
     def test_debug_mode_in_conditional_methods(self):
         """Debug logs appear when a conditional method calls cfg.debug."""
-        from cfg import cfg
 
         original = os.environ.get(ENV_KEY)
         try:
             os.environ[ENV_KEY] = "true"
-            import cfg as cfgmod
             import importlib
+
+            import cfg as cfgmod
 
             importlib.reload(cfgmod)
 

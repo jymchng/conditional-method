@@ -11,7 +11,6 @@ Run::
     python benchmarks/bench.py  # standalone timeit harness (results JSON)
 """
 
-import os
 from functools import wraps
 
 import pytest

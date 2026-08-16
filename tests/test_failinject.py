@@ -68,8 +68,6 @@ def test_fail_cfg_attr_apply_decorators():
     _expect_memoryerror(c.cfg_attr, f, condition=True, decorators=[lambda fn: fn])
 
 
-
-
 def test_fail_cfg_make_raiser():
     def f():
         return 1
@@ -199,6 +197,7 @@ def test_exhaustive_fail_sweep_raiser_call():
 
 def test_exhaustive_fail_sweep_cm_callable_false():
     """cm callable condition -> False -> raiser creation allocs."""
+
     def f():
         return 1
 
@@ -211,6 +210,7 @@ def test_exhaustive_fail_sweep_cm_callable_false():
 
 def test_exhaustive_fail_sweep_cfg_attr_callable_false():
     """cfg_attr callable condition -> False -> raiser creation allocs."""
+
     def f():
         return 1
 
@@ -223,6 +223,7 @@ def test_exhaustive_fail_sweep_cfg_attr_callable_false():
 
 def test_exhaustive_fail_sweep_cfg_attr_factory_true():
     """cfg_attr factory (True, non-callable) -> closure allocs."""
+
     def scenario():
         d = c.cfg_attr(condition=True, decorators=[])
         d(lambda: 1)
@@ -232,6 +233,7 @@ def test_exhaustive_fail_sweep_cfg_attr_factory_true():
 
 def test_exhaustive_fail_sweep_cfg_attr_factory_false():
     """cfg_attr factory (False, non-callable) -> closure allocs."""
+
     def scenario():
         d = c.cfg_attr(condition=False, decorators=[])
         d(lambda: 1)
@@ -241,6 +243,7 @@ def test_exhaustive_fail_sweep_cfg_attr_factory_false():
 
 def test_exhaustive_fail_sweep_cfg_attr_direct_empty_decorators():
     """cfg_attr direct True with empty decorators -> PyTuple_New(0)."""
+
     def f():
         return 1
 
@@ -252,6 +255,7 @@ def test_exhaustive_fail_sweep_cfg_attr_direct_empty_decorators():
 
 def test_exhaustive_fail_sweep_cfg_attr_direct_true_multi_deco():
     """cfg_attr direct True with multiple decorators -> apply loop allocs."""
+
     def f():
         return 1
 
@@ -263,6 +267,7 @@ def test_exhaustive_fail_sweep_cfg_attr_direct_true_multi_deco():
 
 def test_exhaustive_fail_sweep_cfg_attr_direct_false():
     """cfg_attr direct False -> raiser allocs."""
+
     def f():
         return 1
 
@@ -274,6 +279,7 @@ def test_exhaustive_fail_sweep_cfg_attr_direct_false():
 
 def test_exhaustive_fail_sweep_cfg_attr_wrapper():
     """cfg_attr_wrapper with a valid closure -> kwargs/apply allocs."""
+
     def scenario():
         d = c.cfg_attr(condition=True, decorators=[lambda fn: fn])
         d(lambda: 1)
@@ -296,7 +302,9 @@ def test_global_union_fail_sweep():
         lambda: c.cm(condition=lambda fn: False)(f),
         lambda: c.cfg_attr(f, condition=True, decorators=[]),
         lambda: c.cfg_attr(f, condition=True, decorators=[lambda fn: fn]),
-        lambda: c.cfg_attr(f, condition=True, decorators=[lambda fn: fn, lambda fn: fn]),
+        lambda: c.cfg_attr(
+            f, condition=True, decorators=[lambda fn: fn, lambda fn: fn]
+        ),
         lambda: c.cfg_attr(f, condition=False, decorators=[]),
         lambda: c.cfg_attr(f, condition=False, decorators=[lambda fn: fn]),
         lambda: c.cfg_attr(f, condition=lambda fn: True, decorators=[lambda fn: fn]),
@@ -338,7 +346,9 @@ def test_always_fail_mode_covers_all_guards():
         lambda: c.cm(condition=lambda fn: False)(f),
         lambda: c.cfg_attr(f, condition=True, decorators=[]),
         lambda: c.cfg_attr(f, condition=True, decorators=[lambda fn: fn]),
-        lambda: c.cfg_attr(f, condition=True, decorators=[lambda fn: fn, lambda fn: fn]),
+        lambda: c.cfg_attr(
+            f, condition=True, decorators=[lambda fn: fn, lambda fn: fn]
+        ),
         lambda: c.cfg_attr(f, condition=False, decorators=[]),
         lambda: c.cfg_attr(f, condition=False, decorators=[lambda fn: fn]),
         lambda: c.cfg_attr(f, condition=lambda fn: True, decorators=[lambda fn: fn]),

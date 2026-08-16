@@ -1,6 +1,6 @@
-from cfg import cfg
-
 import os
+
+from cfg import cfg
 
 ENVIRONMENT_KEY = "ENVIRONMENT_KEY"
 os.environ[ENVIRONMENT_KEY] = "production"

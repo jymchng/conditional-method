@@ -17,8 +17,10 @@ def test_imports_fn(ENV_value):
 
 
 def test_imports_fn_two(ENV_value):
-    from .imports_fn import Person as PersonOne, env as env_one
-    from .imports_fn_two import Person as PersonTwo, env as env_two
+    from .imports_fn import Person as PersonOne
+    from .imports_fn import env as env_one
+    from .imports_fn_two import Person as PersonTwo
+    from .imports_fn_two import env as env_two
 
     assert env_one() == "LOCAL"
 

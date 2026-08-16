@@ -1,5 +1,6 @@
-import pytest
 import os
+
+import pytest
 from fastapi.testclient import TestClient
 from fastapi_auth import app, create_access_token
 

@@ -130,8 +130,7 @@ os.environ["FEATURE_FLAG"] = "enabled"
     condition=os.environ.get("FEATURE_FLAG") == "enabled",
     decorators=[log_calls, cache_result],
 )
-def experimental_feature(value):
-    ...
+def experimental_feature(value): ...
 ```
 
 Decorators are applied in order — but only when `condition` is true.
