@@ -1,0 +1,180 @@
+# cibuildwheel abi3 matrix.
+#
+# Builds cp39-abi3 wheels (one per platform/arch, covering CPython 3.9+ via
+# the stable ABI):
+#   build_wheels_ci (PR + push to main, cheap/fast):
+#     x86_64, aarch64 (Linux); arm64, x86_64 (macOS); AMD64 (Windows)
+#   build_wheels_release (tag push v* + workflow_dispatch, FULL matrix):
+#     Linux manylinux x86_64/aarch64/i686/ppc64le/s390x/armv7l (QEMU),
+#     macOS arm64/x86_64, Windows AMD64/ARM64/x86
+# Non-x86_64 Linux archs are cross-built via QEMU (docker/setup-qemu-action).
+# Uploads artifacts; validates Linux wheels install + smoke on ubuntu.
+
+name: wheels
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build_wheels_ci:
+    name: Build wheel CI (${{ matrix.os }} ${{ matrix.arch }})
+    runs-on: ${{ matrix.os }}
+    if: github.event_name == 'pull_request' || github.event_name == 'push'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            arch: x86_64
+          - os: ubuntu-latest
+            arch: aarch64
+          - os: macos-latest
+            arch: arm64
+          - os: macos-latest
+            arch: x86_64
+          - os: windows-latest
+            arch: AMD64
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Set up QEMU (aarch64)
+        if: runner.os == 'Linux' && matrix.arch != 'x86_64'
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: all
+
+      - uses: pypa/cibuildwheel@v2.22.0
+        env:
+          CIBW_ARCHS: ${{ matrix.arch }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheels-${{ matrix.os }}-${{ matrix.arch }}
+          path: ./wheelhouse/*.whl
+
+  build_wheels_release:
+    name: Build wheel FULL (${{ matrix.os }} ${{ matrix.arch }})
+    runs-on: ${{ matrix.os }}
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref_type == 'tag')
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            arch: x86_64
+          - os: ubuntu-latest
+            arch: aarch64
+          - os: ubuntu-latest
+            arch: i686
+          - os: ubuntu-latest
+            arch: ppc64le
+          - os: ubuntu-latest
+            arch: s390x
+          - os: ubuntu-latest
+            arch: armv7l
+          - os: macos-latest
+            arch: arm64
+          - os: macos-latest
+            arch: x86_64
+          - os: windows-latest
+            arch: AMD64
+          - os: windows-latest
+            arch: ARM64
+          - os: windows-latest
+            arch: x86
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Set up QEMU (cross-arch Linux builds)
+        if: runner.os == 'Linux' && matrix.arch != 'x86_64'
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: all
+
+      - uses: pypa/cibuildwheel@v2.22.0
+        env:
+          CIBW_ARCHS: ${{ matrix.arch }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheels-${{ matrix.os }}-${{ matrix.arch }}
+          path: ./wheelhouse/*.whl
+
+  validate_wheels:
+    name: Validate wheels
+    needs: [build_wheels_ci, build_wheels_release]
+    if: always() && (needs.build_wheels_ci.result == 'success' || needs.build_wheels_release.result == 'success')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: wheels-*
+          merge-multiple: true
+          path: ./dist
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Check every wheel is cp39-abi3 (PKG-006)
+        run: |
+          set -euo pipefail
+          count=0
+          for whl in dist/*.whl; do
+            tag=$(unzip -p "$whl" '*/WHEEL' | grep -m1 '^Tag:' || true)
+            echo "$(basename "$whl"): $tag"
+            case "$tag" in
+              *cp39-abi3*) count=$((count+1)) ;;
+              *) echo "ERROR: unexpected tag in $whl" >&2; exit 1 ;;
+            esac
+          done
+          [ "$count" -gt 0 ] || { echo "no wheels found" >&2; exit 1; }
+          echo "Verified $count wheels are cp39-abi3"
+
+      - name: Smoke-test each installable wheel
+        run: |
+          python -m pip install --upgrade pip
+          installed=0
+          for whl in dist/*.whl; do
+            # Only glibc manylinux x86_64 wheels install on this ubuntu runner
+            # (musllinux needs musl; macosx/win are non-Linux; other archs
+            # need QEMU/emulation).
+            case "$whl" in
+              *musllinux*|*macosx*|*win_amd64*|*win32*|*win_arm64*)
+                echo "SKIPPED (not glibc/Linux): $(basename "$whl")"
+                continue
+                ;;
+              *x86_64*.whl)
+                ;;
+              *)
+                echo "SKIPPED (non-x86_64): $(basename "$whl")"
+                continue
+                ;;
+            esac
+            python -m venv /tmp/whl-venv
+            /tmp/whl-venv/bin/pip install -q "$whl"
+            /tmp/whl-venv/bin/python scripts/smoke_wheel.py
+            rm -rf /tmp/whl-venv
+            installed=$((installed+1))
+            echo "OK: $(basename "$whl")"
+          done
+          echo "Validated $installed Linux wheels"
+          [ "$installed" -gt 0 ]

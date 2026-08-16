@@ -1,0 +1,66 @@
+# Build the MkDocs site and deploy it to GitHub Pages.
+# The deploy step only runs when GitHub Pages is enabled for the repo
+# (Settings > Pages > Source: GitHub Actions); otherwise the workflow
+# completes green with a notice so CI never blocks on repo settings.
+name: pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install and build MkDocs
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install mkdocs-material
+          python -m mkdocs build --strict --site-dir _site
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Check whether GitHub Pages is enabled
+        id: pages-check
+        run: |
+          status=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer ${{ github.token }}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/pages")
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        if: steps.pages-check.outputs.status == '200'
+        uses: actions/deploy-pages@v5
+
+      - name: "Notice: Pages not enabled yet"
+        if: steps.pages-check.outputs.status != '200'
+        run: |
+          echo "::warning::GitHub Pages is not enabled for this repository yet. Enable it (Settings > Pages > Source: GitHub Actions) to activate the docs site."
