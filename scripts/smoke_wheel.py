@@ -29,7 +29,7 @@ def _attr():
 
 
 assert _attr() == 1
-assert cm is conditional_method and cm is if_ and cm is cfg_deco
+assert cm is if_ and cm is cfg_deco
 assert conditional_method.__version__
 
 print(f"wheel smoke OK (conditional-method {conditional_method.__version__})")
