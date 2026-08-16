@@ -6,7 +6,8 @@ Run from a clean venv after ``pip install`` of a wheel::
 """
 
 import cfg
-from cfg import cfg as cfg_deco, cfg_attr, cm, if_, conditional_method
+from cfg import cfg as cfg_deco
+from cfg import cfg_attr, cm, conditional_method, if_
 
 
 @cfg_deco(condition=True)

@@ -16,8 +16,22 @@ theme:
     - content.code.copy
 nav:
   - Home: index.md
-  - Benchmarks: benchmarks.md
+  - User Guide:
+      - Installation: installation.md
+      - Quickstart: quickstart.md
+      - "Usage: @cfg": usage.md
+      - "Usage: @cfg_attr": cfg_attr.md
+      - API Reference: api.md
+      - Errors: errors.md
+      - FAQ: faq.md
+  - Developer Guide:
+      - Development: development.md
+      - Compatibility: compatibility.md
+      - Benchmarks: benchmarks.md
+      - Release: release.md
 markdown_extensions:
   - admonition
   - codehilite
   - pymdownx.superfences
+  - pymdownx.details
+  - pymdownx.tabbed

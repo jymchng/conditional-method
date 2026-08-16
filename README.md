@@ -154,3 +154,11 @@ set __conditional_method_debug__=true
 ## License
 
 This project is licensed under the terms of the MIT license.
+
+## Links
+
+- **Documentation**: <https://jymchng.github.io/conditional-method/>
+- **Changelog**: [CHANGELOG.md](CHANGELOG.md)
+- **Security**: [SECURITY.md](SECURITY.md)
+- **Source**: <https://github.com/jymchng/conditional-method>
+- **PyPI**: <https://pypi.org/project/python-cfg>
