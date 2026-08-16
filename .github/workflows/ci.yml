@@ -52,3 +52,17 @@ jobs:
         run: |
           uv build --wheel
           ls dist/*.whl
+
+  coverage:
+    name: C coverage gate (gcov >90%)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.13"
+          enable-cache: true
+      - name: Check gcov availability
+        run: gcov --version | head -1
+      - name: Run C coverage gate
+        run: bash scripts/coverage-gate.sh
