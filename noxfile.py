@@ -442,6 +442,7 @@ def build(session: Session):
 
 @session(dependency_group="test", default_posargs=["tests/benchmark.py", "-v"])
 def benchmark(session: Session):
+    """pytest-benchmark (tests/benchmark.py) + standalone timeit harness."""
     session.run(
         "uv",
         "run",
@@ -450,6 +451,13 @@ def benchmark(session: Session):
         "python",
         "-m",
         "pytest",
+        *session.posargs,
+    )
+    session.run(
+        "uv",
+        "run",
+        "python",
+        "benchmarks/bench.py",
     )
 
 

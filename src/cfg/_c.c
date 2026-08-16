@@ -1,6 +1,58 @@
 #include <Python.h>
 #include <structmember.h>
 
+/* Test-only allocation-failure injection (PY_CFG_TESTING).
+ * When defined (CI coverage builds only), cfg_set_alloc_fail_count(n)
+ * makes the next n guarded allocations fail with MemoryError. Production
+ * wheels never define this macro, so no hooks ship. */
+#ifdef PY_CFG_TESTING
+static Py_ssize_t _cfg_alloc_fail_at = -1;
+static Py_ssize_t _cfg_alloc_index = 0;
+static int _cfg_alloc_should_fail(void) {
+  if (_cfg_alloc_fail_at == -2) {
+    /* always-fail mode: every guarded allocation fails */
+    return 1;
+  }
+  if (_cfg_alloc_fail_at < 0) {
+    return 0;
+  }
+  if (_cfg_alloc_index == _cfg_alloc_fail_at) {
+    _cfg_alloc_index++;
+    return 1;
+  }
+  _cfg_alloc_index++;
+  return 0;
+}
+static PyObject *cfg_set_alloc_fail_count(PyObject *Py_UNUSED(self),
+                                          PyObject *args) {
+  Py_ssize_t n;
+  if (!PyArg_ParseTuple(args, "n", &n)) {
+    return NULL;
+  }
+  _cfg_alloc_fail_at = n;
+  _cfg_alloc_index = 0;
+  Py_RETURN_NONE;
+}
+#define CFG_ALLOC_FAIL_GUARD()          \
+  do {                                  \
+    if (_cfg_alloc_should_fail()) {     \
+      PyErr_NoMemory();                 \
+      return NULL;                      \
+    }                                   \
+  } while (0)
+#define CFG_ALLOC_FAIL_GUARD_VOID()     \
+  do {                                  \
+    if (_cfg_alloc_should_fail()) {     \
+      PyErr_NoMemory();                 \
+      return;                           \
+    }                                   \
+  } while (0)
+#else
+#define CFG_ALLOC_FAIL_GUARD()
+#define CFG_ALLOC_FAIL_GUARD_VOID()
+#endif
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -60,7 +112,7 @@ static PyObject *cfg_debug_enabled(PyObject *Py_UNUSED(self),
 static PyObject *_cm_wrapper(PyObject *self, PyObject *args);
 static PyObject *cfg_attr_wrapper(PyObject *self, PyObject *args);
 static PyObject *_cm_inner(PyObject *self, PyObject *args);
-static PyObject *_raise_exec(PyObject *args, PyObject *kwargs);
+static PyObject *_raise_exec(PyObject *self, PyObject *args);
 static PyObject *_get_func_name(PyObject *self, PyObject *func);
 static PyObject *cm(PyObject *self, PyObject *args, PyObject *kwargs);
 static PyObject *cfg_attr(PyObject *self, PyObject *args, PyObject *kwargs);
@@ -124,11 +176,13 @@ static void _raise_typeerror(TypeErrorRaiserObject *self) {
   }
 
   /* Join the qualnames for the error message */
+  CFG_ALLOC_FAIL_GUARD_VOID();
   PyObject *qualnames_iter = PyObject_GetIter(self->f_qualnames);
   if (qualnames_iter == NULL) {
     return;
   }
 
+  CFG_ALLOC_FAIL_GUARD_VOID();
   PyObject *qualnames_list = PyList_New(0);
   if (qualnames_list == NULL) {
     Py_DECREF(qualnames_iter);
@@ -147,6 +201,7 @@ static void _raise_typeerror(TypeErrorRaiserObject *self) {
   }
   Py_DECREF(qualnames_iter);
 
+  CFG_ALLOC_FAIL_GUARD_VOID();
   PyObject *separator = PyUnicode_FromString(", ");
   if (separator == NULL) {
     Py_DECREF(qualnames_list);
@@ -220,6 +275,7 @@ static PyObject *TypeErrorRaiser_new(PyTypeObject *type,
   TypeErrorRaiserObject *self;
   self = (TypeErrorRaiserObject *)type->tp_alloc(type, 0);
   if (self != NULL) {
+    CFG_ALLOC_FAIL_GUARD();
     self->f_qualnames = PySet_New(NULL);
     if (self->f_qualnames == NULL) {
       Py_DECREF(self);
@@ -326,6 +382,7 @@ static PyTypeObject CfgCallableType = {
 
 /* Wrap a PyCFunction in a CfgCallable instance. */
 static PyObject *CfgCallable_new_wrapper(PyMethodDef *def) {
+  CFG_ALLOC_FAIL_GUARD();
   PyObject *cf = PyCFunction_New(def, NULL);
   if (cf == NULL) {
     return NULL;
@@ -341,6 +398,7 @@ static PyObject *CfgCallable_new_wrapper(PyMethodDef *def) {
     return NULL;
   }
   obj->callable = cf; /* steals the reference */
+  CFG_ALLOC_FAIL_GUARD();
   obj->dict = PyDict_New();
   if (obj->dict == NULL) {
     Py_DECREF((PyObject *)obj);
@@ -350,15 +408,15 @@ static PyObject *CfgCallable_new_wrapper(PyMethodDef *def) {
 }
 
 /* Function to create a new TypeErrorRaiser instance */
-static PyObject *_raise_exec(PyObject *args, PyObject *kwargs) {
-  static char *kwlist[] = {"qualname", NULL};
+static PyObject *_raise_exec(PyObject *self, PyObject *args) {
   PyObject *qualname = NULL;
 
-  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|O", kwlist, &qualname)) {
+  if (!PyArg_ParseTuple(args, "|O", &qualname)) {
     return NULL;
   }
 
   /* Create a new TypeErrorRaiser instance */
+  CFG_ALLOC_FAIL_GUARD();
   PyObject *raiser =
       PyObject_CallObject((PyObject *)&TypeErrorRaiserType, NULL);
   if (raiser == NULL) {
@@ -397,12 +455,14 @@ static PyObject *_get_func_name(PyObject *self, PyObject *func) {
     if (PyObject_HasAttrString(func, "__module__")) {
       module = PyObject_GetAttrString(func, "__module__");
       if (module != NULL && PyUnicode_Check(module)) {
+        CFG_ALLOC_FAIL_GUARD();
         result = PyUnicode_FromFormat("%U.%U", module, qualname);
       }
     }
 
     if (result == NULL) {
       /* If we couldn't get the module, just use the qualname */
+      CFG_ALLOC_FAIL_GUARD();
       result = PyUnicode_FromObject(qualname);
     }
 
@@ -452,6 +512,7 @@ static PyObject *_cm_wrapper(PyObject *self, PyObject *args) {
   }
 
   /* Call _cm_inner with func and condition */
+  CFG_ALLOC_FAIL_GUARD();
   PyObject *inner_args = Py_BuildValue("(OO)", func, condition);
   if (inner_args == NULL) {
     return NULL;
@@ -492,6 +553,7 @@ static PyObject *cm(PyObject *self, PyObject *args, PyObject *kwargs) {
 
     /* Create a wrapper function that will call _cm_inner with the captured
      * condition */
+    CFG_ALLOC_FAIL_GUARD();
     PyObject *wrapper = PyCFunction_NewEx(&cm_wrapper_def, condition, NULL);
     if (wrapper == NULL) {
       return NULL;
@@ -510,6 +572,7 @@ static PyObject *cm(PyObject *self, PyObject *args, PyObject *kwargs) {
   }
 
   /* Call _cm_inner directly with the function and condition */
+  CFG_ALLOC_FAIL_GUARD();
   PyObject *args_tuple = Py_BuildValue("(OO)", func, condition);
   if (args_tuple == NULL) {
     return NULL;
@@ -534,12 +597,17 @@ static PyObject *_cm_inner(PyObject *self, PyObject *args) {
   if (f_qualname == NULL) {
     return NULL;
   }
+  const char *fq_utf8 = PyUnicode_AsUTF8(f_qualname);
+  _cfg_log("cm: decorating %s", fq_utf8 != NULL ? fq_utf8 : "?");
+  _cfg_log("cm: f_qualname %s", fq_utf8 != NULL ? fq_utf8 : "?");
+
 
   /* Evaluate the condition */
   PyObject *cond_result = NULL;
 
   if (PyCallable_Check(condition)) {
     /* If condition is callable, call it with the function */
+    CFG_ALLOC_FAIL_GUARD();
     PyObject *args_tuple = PyTuple_New(1);
     if (args_tuple == NULL) {
       Py_DECREF(f_qualname);
@@ -593,6 +661,7 @@ static PyObject *_cm_inner(PyObject *self, PyObject *args) {
   /* If the condition is true, add the function to the cache and return it */
   if (cond_bool) {
     if (PyDict_SetItem(_cm_cache, f_qualname, func) < 0) {
+      CFG_ALLOC_FAIL_GUARD();
       Py_DECREF(f_qualname);
       return NULL;
     }
@@ -610,7 +679,7 @@ static PyObject *_cm_inner(PyObject *self, PyObject *args) {
   }
 
   /* If the function is not in the cache, create a TypeErrorRaiser */
-  PyObject *raiser = _raise_exec(Py_BuildValue("(O)", f_qualname), NULL);
+  PyObject *raiser = _raise_exec(NULL, Py_BuildValue("(O)", f_qualname));
   if (raiser == NULL) {
     Py_DECREF(f_qualname);
     return NULL;
@@ -619,6 +688,7 @@ static PyObject *_cm_inner(PyObject *self, PyObject *args) {
   /* Add the function qualname to the raiser's f_qualnames set */
   TypeErrorRaiserObject *raiser_obj = (TypeErrorRaiserObject *)raiser;
   if (PySet_Add(raiser_obj->f_qualnames, f_qualname) < 0) {
+    CFG_ALLOC_FAIL_GUARD();
     Py_DECREF(f_qualname);
     Py_DECREF(raiser);
     return NULL;
@@ -648,11 +718,13 @@ static PyObject *cfg_attr_wrapper(PyObject *self, PyObject *args) {
   PyObject *decorators = PyTuple_GET_ITEM(closure, 1);
 
   /* Call cfg_attr with all the arguments */
+  CFG_ALLOC_FAIL_GUARD();
   PyObject *args_tuple = PyTuple_Pack(1, func);
   if (args_tuple == NULL) {
     return NULL;
   }
 
+  CFG_ALLOC_FAIL_GUARD();
   PyObject *kwargs = PyDict_New();
   if (kwargs == NULL) {
     Py_DECREF(args_tuple);
@@ -661,6 +733,7 @@ static PyObject *cfg_attr_wrapper(PyObject *self, PyObject *args) {
 
   if (PyDict_SetItemString(kwargs, "condition", condition) < 0 ||
       PyDict_SetItemString(kwargs, "decorators", decorators) < 0) {
+    CFG_ALLOC_FAIL_GUARD();
     Py_DECREF(args_tuple);
     Py_DECREF(kwargs);
     return NULL;
@@ -677,63 +750,70 @@ static PyObject *cfg_attr_wrapper(PyObject *self, PyObject *args) {
    decorators is a sequence; applied right-to-left so decorators[0] is outermost. */
 static PyObject *cfg_attr_apply_decorators(PyObject *func, PyObject *decorators,
                                            PyObject *f_qualname) {
+  PyObject *result = NULL;
   if (!PySequence_Check(decorators)) {
     PyErr_SetString(PyExc_TypeError, "decorators must be a sequence");
-    return NULL;
+    goto error;
   }
   Py_ssize_t n = PySequence_Length(decorators);
   if (n < 0) {
-    return NULL;
+    goto error;
   }
   if (n == 0) {
     Py_INCREF(func);
     return func;
   }
-  PyObject *result = func;
+  result = func;
   Py_INCREF(result);
   for (Py_ssize_t i = n - 1; i >= 0; i--) {
+    CFG_ALLOC_FAIL_GUARD();
     PyObject *decorator = PySequence_GetItem(decorators, i);
     if (decorator == NULL) {
-      Py_DECREF(result);
-      return NULL;
+      goto error;
     }
+    CFG_ALLOC_FAIL_GUARD();
     PyObject *args_tuple = PyTuple_Pack(1, result);
     Py_DECREF(result);
+    result = NULL;
     if (args_tuple == NULL) {
       Py_DECREF(decorator);
-      return NULL;
+      goto error;
     }
     PyObject *decorated = PyObject_Call(decorator, args_tuple, NULL);
     Py_DECREF(args_tuple);
     Py_DECREF(decorator);
     if (decorated == NULL) {
-      return NULL;
+      goto error;
     }
     result = decorated;
   }
   if (f_qualname != NULL) {
     if (PyDict_SetItem(_cfg_attr_cache, f_qualname, result) < 0) {
-      Py_DECREF(result);
-      return NULL;
+      goto error;
     }
   }
   return result;
+error:
+  Py_XDECREF(result);
+  return NULL;
 }
 
 /* Helper: create a TypeErrorRaiser for a false-conditioned function
    (shared by cm and cfg_attr). Adds f_qualname to the raiser's set. */
 static PyObject *cfg_make_raiser(PyObject *f_qualname) {
+  CFG_ALLOC_FAIL_GUARD();
   PyObject *raiser_args = Py_BuildValue("(O)", f_qualname);
   if (raiser_args == NULL) {
     return NULL;
   }
-  PyObject *raiser = _raise_exec(raiser_args, NULL);
+  PyObject *raiser = _raise_exec(NULL, raiser_args);
   Py_DECREF(raiser_args);
   if (raiser == NULL) {
     return NULL;
   }
   TypeErrorRaiserObject *raiser_obj = (TypeErrorRaiserObject *)raiser;
   if (PySet_Add(raiser_obj->f_qualnames, f_qualname) < 0) {
+    CFG_ALLOC_FAIL_GUARD();
     Py_DECREF(raiser);
     return NULL;
   }
@@ -771,6 +851,7 @@ static PyObject *cfg_attr(PyObject *self, PyObject *args, PyObject *kwargs) {
 
   /* Default decorators to an empty tuple */
   if (decorators == NULL) {
+    CFG_ALLOC_FAIL_GUARD();
     decorators = PyTuple_New(0);
     if (decorators == NULL) {
       return NULL;
@@ -783,7 +864,8 @@ static PyObject *cfg_attr(PyObject *self, PyObject *args, PyObject *kwargs) {
   if (PyCallable_Check(condition)) {
     /* Factory form: return a wrapper that evaluates per-function. */
     if (func == NULL || func == Py_None) {
-      PyObject *closure = PyTuple_New(2);
+      CFG_ALLOC_FAIL_GUARD();
+    PyObject *closure = PyTuple_New(2);
       if (closure == NULL) {
         Py_DECREF(decorators);
         return NULL;
@@ -791,7 +873,8 @@ static PyObject *cfg_attr(PyObject *self, PyObject *args, PyObject *kwargs) {
       Py_INCREF(condition);
       PyTuple_SET_ITEM(closure, 0, condition);
       PyTuple_SET_ITEM(closure, 1, decorators);
-      PyObject *wrapper = PyCFunction_New(&cfg_attr_wrapper_def, closure);
+      CFG_ALLOC_FAIL_GUARD();
+    PyObject *wrapper = PyCFunction_New(&cfg_attr_wrapper_def, closure);
       if (wrapper == NULL) {
         Py_DECREF(closure);
         return NULL;
@@ -875,6 +958,7 @@ static PyObject *cfg_attr(PyObject *self, PyObject *args, PyObject *kwargs) {
   if (cond_truthy) {
     /* True: apply decorators (factory or direct) */
     if (func == NULL || func == Py_None) {
+      _cfg_log("cfg_attr: true factory");
       PyObject *closure = PyTuple_New(2);
       if (closure == NULL) {
         Py_DECREF(decorators);
@@ -948,8 +1032,7 @@ static PyMethodDef cfg_attr_method_def = {
 
 /* Define the methods of the module */
 static PyMethodDef ConditionalMethodMethods[] = {
-    {"_raise_exec", (PyCFunction)(void (*)(void))_raise_exec,
-     METH_VARARGS | METH_KEYWORDS,
+    {"_raise_exec", _raise_exec, METH_VARARGS,
      "Create a TypeErrorRaiser instance."},
     {"_get_func_name", _get_func_name, METH_O,
      "Get the fully qualified name of a function."},
@@ -965,6 +1048,14 @@ static PyMethodDef ConditionalMethodMethods[] = {
      "Conditionally apply a chain of decorators to a function."},
     {"debug", cfg_debug, METH_VARARGS, "Log a debug message (noop unless enabled)."},
     {"debug_enabled", cfg_debug_enabled, METH_NOARGS, "Whether debug logging is enabled."},
+    {"_cm_wrapper", _cm_wrapper, METH_VARARGS,
+     "Internal decorator wrapper (exposed for testing)."},
+#ifdef PY_CFG_TESTING
+    {"set_alloc_fail_count", cfg_set_alloc_fail_count, METH_VARARGS,
+     "Test-only: make the next n guarded allocations fail."},
+#endif
+    {"cfg_attr_wrapper", cfg_attr_wrapper, METH_VARARGS,
+     "Internal cfg_attr wrapper (exposed for testing)."},
     {NULL, NULL, 0, NULL} /* Sentinel */
 };
 
@@ -984,6 +1075,7 @@ static struct PyModuleDef conditionalmodule = {
 /* Module initialization function */
 PyMODINIT_FUNC PyInit__c(void) {
   /* Initialize the module */
+  CFG_ALLOC_FAIL_GUARD();
   PyObject *m = PyModule_Create(&conditionalmodule);
   if (m == NULL) {
     return NULL;

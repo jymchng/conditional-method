@@ -15,3 +15,7 @@ wheels/
 # because this is a library, we don't need a lock file
 uv.lock
 dist_logs/
+# gcov coverage artifacts
+*.gcno
+*.gcda
+*.gcov
