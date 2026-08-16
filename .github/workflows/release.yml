@@ -123,9 +123,44 @@ jobs:
           name: wheels-${{ matrix.os }}-${{ matrix.arch }}
           path: dist/*.whl
 
+  build_pyodide_wheel:
+    name: Build pyodide wheel (wasm32)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref_name }}
+          fetch-depth: 0
+          fetch-tags: true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Build pyodide (emscripten wasm32) wheel
+        env:
+          CIBW_PLATFORM: pyodide
+          CIBW_BUILD: cp313-pyodide_wasm32
+          # Override [tool.cibuildwheel] archs (native archs are invalid for
+          # pyodide; wasm32 is the only supported arch).
+          CIBW_ARCHS: wasm32
+        uses: pypa/cibuildwheel@v4.2.0
+        with:
+          output-dir: dist
+
+      - name: Verify pyodide wheel
+        run: |
+          ls -la dist/
+          test -n "$(ls dist/*emscripten*.whl 2>/dev/null || echo '')" || { echo "no emscripten wheel produced"; exit 1; }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheels-pyodide
+          path: dist/*emscripten*.whl
+
   github_release:
     name: Create GitHub Release
-    needs: [build_sdist, build_wheels]
+    needs: [build_sdist, build_wheels, build_pyodide_wheel]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
@@ -142,7 +177,7 @@ jobs:
       - name: Verify artifact integrity + count
         run: |
           python - <<'EOF'
-          import hashlib, glob
+          import hashlib, glob, zipfile
           files = sorted(glob.glob("dist/*"))
           assert files, "no artifacts"
           for f in files:
@@ -151,10 +186,12 @@ jobs:
           print(f"total artifacts: {len(files)}")
           assert any(f.endswith(".tar.gz") for f in files), "missing sdist"
           whls = [f for f in files if f.endswith(".whl")]
-          assert len(whls) >= 9, f"expected >=9 wheels, got {len(whls)}"
-          # Every wheel must carry the cp39-abi3 tag (stable ABI).
-          import zipfile
+          assert len(whls) >= 10, f"expected >=10 wheels, got {len(whls)}"
+          assert any("emscripten" in f for f in whls), "missing pyodide wheel"
+          # Every native wheel must carry the cp39-abi3 tag (stable ABI).
           for w in whls:
+              if "emscripten" in w:
+                  continue
               with zipfile.ZipFile(w) as z:
                   wheel_meta = [n for n in z.namelist() if n.endswith("WHEEL")][0]
                   tag = z.read(wheel_meta).decode()
@@ -173,7 +210,7 @@ jobs:
 
   publish:
     # Publish to PyPI ("python-cfg") via trusted publishing (OIDC).
-    needs: [build_sdist, build_wheels]
+    needs: [build_sdist, build_wheels, build_pyodide_wheel]
     runs-on: ubuntu-latest
     environment:
       name: release
