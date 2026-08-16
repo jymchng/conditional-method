@@ -170,7 +170,9 @@ jobs:
             -path '*pyodide-build-*' -path '*314.0.3*' \
             -path '*/xbuildenv/pyodide-root/Makefile.envs' 2>/dev/null | head -n1 || true)
           if [ -n "$MKFILE" ]; then
-            PYODIDE_EMSCRIPTEN_VERSION=$(sed -n 's/^export *PYODIDE_EMSCRIPTEN_VERSION?*=//p' "$MKFILE" \
+            # Makefile.envs uses 'export PYODIDE_EMSCRIPTEN_VERSION ?= 5.0.3'
+            # (?= means "set if not already defined"); also tolerate '='.
+            PYODIDE_EMSCRIPTEN_VERSION=$(sed -n 's/^export *PYODIDE_EMSCRIPTEN_VERSION[^=]*= *//p' "$MKFILE" \
               | tr -d "\"'" | tail -n1)
           fi
           echo "Emscripten version: ${PYODIDE_EMSCRIPTEN_VERSION:-<unset>}"
