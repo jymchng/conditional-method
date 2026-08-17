@@ -1,0 +1,74 @@
+{
+  "environment": {
+    "python": "3.13.13",
+    "platform": "Linux-7.0.0-14-generic-x86_64-with-glibc2.43",
+    "implementation": "CPython",
+    "version": "0.2.6.dev1",
+    "machine": "x86_64"
+  },
+  "results": [
+    {
+      "name": "plain_class_def",
+      "loops": 100000,
+      "repeat": 5,
+      "best_s": 0.8929761052131653,
+      "mean_s": 1.0896583575755359,
+      "best_us_per_op": 8.929761052131653,
+      "mean_us_per_op": 10.89658357575536
+    },
+    {
+      "name": "cfg_class_closure_def",
+      "loops": 100000,
+      "repeat": 5,
+      "best_s": 1.2758215218782425,
+      "mean_s": 1.339833591133356,
+      "best_us_per_op": 12.758215218782425,
+      "mean_us_per_op": 13.398335911333561
+    },
+    {
+      "name": "cfg_class_closure_callable_def",
+      "loops": 100000,
+      "repeat": 5,
+      "best_s": 1.2695491518825293,
+      "mean_s": 1.3251977629959584,
+      "best_us_per_op": 12.695491518825293,
+      "mean_us_per_op": 13.251977629959583
+    },
+    {
+      "name": "cfg_class_two_conditions_def",
+      "loops": 100000,
+      "repeat": 5,
+      "best_s": 1.2843071278184652,
+      "mean_s": 1.336368702724576,
+      "best_us_per_op": 12.843071278184652,
+      "mean_us_per_op": 13.363687027245762
+    },
+    {
+      "name": "call_plain_method",
+      "loops": 100000,
+      "repeat": 5,
+      "best_s": 0.008747583255171776,
+      "mean_s": 0.0087900809943676,
+      "best_us_per_op": 0.08747583255171776,
+      "mean_us_per_op": 0.087900809943676
+    },
+    {
+      "name": "call_cfg_method",
+      "loops": 100000,
+      "repeat": 5,
+      "best_s": 0.007835527881979942,
+      "mean_s": 0.007875799760222435,
+      "best_us_per_op": 0.07835527881979942,
+      "mean_us_per_op": 0.07875799760222435
+    },
+    {
+      "name": "call_runtime_if",
+      "loops": 100000,
+      "repeat": 5,
+      "best_s": 0.010511171072721481,
+      "mean_s": 0.010594511777162552,
+      "best_us_per_op": 0.10511171072721481,
+      "mean_us_per_op": 0.10594511777162552
+    }
+  ]
+}
