@@ -10,6 +10,11 @@
   (`work = make()` in a class body): definition time and call time vs
   plain/runtime-if baselines; writes
   `benchmarks/results/results_cfg_closure.json` (committed).
+- **`@lambda f: f()` trick vs `@cfg`** — `python benchmarks/bench_lambda_vs_cfg.py`
+  compares the decorator-call trick (a factory run at class creation that
+  returns the selected method closure) against `@cfg` conditional method
+  selection, plus a plain baseline; writes
+  `benchmarks/results/results_lambda_vs_cfg.json` (committed).
 - **pytest-benchmark** — `nox -s benchmark` runs `tests/benchmark.py` with
   `pytest-benchmark`, giving statistical comparison across runs.
 
@@ -101,3 +106,65 @@ Call time (class built once, method called per op):
   it is a build-time guard, not a per-call drop.
 
 Reproduce locally: `python benchmarks/bench_cfg_closure.py`.
+
+## `@lambda f: f()` trick vs `@cfg`
+
+Environment: CPython 3.13.13, linux x86_64, `conditional-method` 0.2.6.dev1.
+(Full JSON in `benchmarks/results/results_lambda_vs_cfg.json`.)
+
+Two ways to pick a method implementation at class-build time from an
+enclosing `ENV`:
+
+```python
+# 1) decorator-call trick: the factory runs at class creation
+class Worker:
+    @lambda f: f()
+    def work():
+        if ENV == "PROD":
+            def work(self, item: int): ...   # closure returned as the method
+            return work
+        if ENV == "DEV":
+            def work(self, item: int): ...
+            return work
+
+# 2) @cfg conditional selection (same-named methods, conditions over ENV)
+class Worker:
+    @cfg(condition=ENV == "PROD")
+    def work(self, item: int): ...
+    @cfg(condition=ENV == "DEV")
+    def work(self, item: int): ...
+```
+
+Definition time (class rebuilt per iteration; bodies use `return` so timing
+measures selection/closure machinery, not I/O):
+
+| scenario | best µs/op | mean µs/op |
+|---|---|---|
+| lambda_trick_def | 8.310 | 9.190 |
+| cfg_two_method_def | 12.196 | 12.863 |
+| plain_method_def | 8.238 | 8.798 |
+
+Call time (class built once, trivial body `return item` = pure dispatch):
+
+| scenario | best µs/op | mean µs/op |
+|---|---|---|
+| call_lambda_trick | 0.081 | 0.081 |
+| call_cfg_two_method | 0.080 | 0.109 |
+| call_plain | 0.080 | 0.091 |
+
+### Interpretation
+
+- **Both patterns select the intended method** (sanity-checked: `ENV="PROD"`
+  → the PROD method runs). `@cfg` also caches the selection and replaces a
+  False method with a `TypeErrorRaiser` build-time guard.
+- **Definition**: `@cfg` costs ~12.2 µs vs ~8.3 µs for the `@lambda f: f()`
+  trick (+~48%) and ~8.2 µs for a plain method — the extra is `@cfg`'s
+  condition evaluation + cache bookkeeping, a one-time class-build cost.
+- **Call time is identical** (~0.08 µs best for all three): selection happens
+  at class-build time, so the per-call dispatch is the same whether you use
+  the trick, `@cfg`, or a plain method.
+- The `@lambda f: f()` trick is plain Python (no caching, no guard); `@cfg`
+  buys the build-time guard, caching, and identical call-time at a modest
+  one-time definition cost.
+
+Reproduce locally: `python benchmarks/bench_lambda_vs_cfg.py`.
