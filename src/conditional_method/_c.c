@@ -106,13 +106,20 @@ static PyObject *cfg_debug(PyObject *Py_UNUSED(self), PyObject *args) {
   if (msg == NULL) {
     return NULL;
   }
-  const char *s = PyUnicode_AsUTF8(msg);
+  /* abi3-3.9-safe UTF-8: encode to bytes, then read the buffer (the
+   * Limited-API PyUnicode_AsUTF8* forms are 3.10+). */
+  PyObject *encoded = PyUnicode_AsEncodedString(msg, "utf-8", NULL);
+  Py_DECREF(msg);
+  if (encoded == NULL) {
+    return NULL;
+  }
+  const char *s = PyBytes_AsString(encoded);
   if (s == NULL) {
-    Py_DECREF(msg);
+    Py_DECREF(encoded);
     return NULL;
   }
   fprintf(stderr, "conditional_method - DEBUG - %s\n", s);
-  Py_DECREF(msg);
+  Py_DECREF(encoded);
   Py_RETURN_NONE;
 }
 
@@ -232,10 +239,10 @@ static void _raise_typeerror(TypeErrorRaiserObject *self) {
   }
 
   /* Get the default qualname if the list is empty */
-  const char *qualname_str = "";
+  PyObject *qualname = NULL;
   if (PyUnicode_Check(self->qualname)) {
-    qualname_str = PyUnicode_AsUTF8(self->qualname);
-    if (qualname_str == NULL || CFG_ALLOC_TEST_FAIL_VOID()) {
+    qualname = self->qualname;
+    if (CFG_ALLOC_TEST_FAIL_VOID()) {
       Py_DECREF(joined_qualnames);
       return;
     }
@@ -244,11 +251,19 @@ static void _raise_typeerror(TypeErrorRaiserObject *self) {
   /* Check if the joined qualnames is empty */
   int is_empty = (PyUnicode_GetLength(joined_qualnames) == 0);
 
-  /* Format the error message */
+  /* Format the error message (%U needs a real str; use an empty str when
+   * there is no default qualname — matches the old "%s" with ""). */
   PyObject *error_msg;
   if (is_empty) {
-    error_msg = PyUnicode_FromFormat("None of the conditions is true for `%s`",
-                                     qualname_str);
+    PyObject *empty = PyUnicode_FromString("");
+    if (empty == NULL || CFG_ALLOC_TEST_FAIL_VOID()) {
+      Py_XDECREF(empty);
+      Py_DECREF(joined_qualnames);
+      return;
+    }
+    error_msg = PyUnicode_FromFormat("None of the conditions is true for `%U`",
+                                     qualname != NULL ? qualname : empty);
+    Py_DECREF(empty);
   } else {
     error_msg = PyUnicode_FromFormat("None of the conditions is true for `%U`",
                                      joined_qualnames);
@@ -612,9 +627,13 @@ static PyObject *_cm_inner(PyObject *self, PyObject *args) {
   if (f_qualname == NULL) {
     return NULL;
   }
-  const char *fq_utf8 = PyUnicode_AsUTF8(f_qualname);
+  /* Debug-only UTF-8 logging (abi3-3.9-safe: encode to bytes, read buffer;
+   * the Limited-API PyUnicode_AsUTF8* forms are 3.10+). */
+  PyObject *fq_encoded = PyUnicode_AsEncodedString(f_qualname, "utf-8", NULL);
+  const char *fq_utf8 = fq_encoded != NULL ? PyBytes_AsString(fq_encoded) : NULL;
   _cfg_log("cm: decorating %s", fq_utf8 != NULL ? fq_utf8 : "?");
   _cfg_log("cm: f_qualname %s", fq_utf8 != NULL ? fq_utf8 : "?");
+  Py_XDECREF(fq_encoded);
 
 
   /* Evaluate the condition */

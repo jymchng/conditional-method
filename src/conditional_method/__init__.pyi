@@ -76,4 +76,12 @@ _c: Any
 # Set at runtime from importlib.metadata (the distribution version).
 __version__: str
 
-__all__ = ["cfg", "cfg_attr", "cm", "if_", "_get_mod_qual_func_name", "debug", "debug_enabled"]
+__all__ = [
+    "cfg",
+    "cfg_attr",
+    "cm",
+    "if_",
+    "_get_mod_qual_func_name",
+    "debug",
+    "debug_enabled",
+]
