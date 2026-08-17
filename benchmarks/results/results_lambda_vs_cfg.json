@@ -1,0 +1,65 @@
+{
+  "environment": {
+    "python": "3.13.13",
+    "platform": "Linux-7.0.0-14-generic-x86_64-with-glibc2.43",
+    "implementation": "CPython",
+    "version": "0.2.6.dev1",
+    "machine": "x86_64"
+  },
+  "results": [
+    {
+      "name": "lambda_trick_def",
+      "loops": 100000,
+      "repeat": 5,
+      "best_s": 0.8310479000210762,
+      "mean_s": 0.919005187600851,
+      "best_us_per_op": 8.310479000210762,
+      "mean_us_per_op": 9.19005187600851
+    },
+    {
+      "name": "cfg_two_method_def",
+      "loops": 100000,
+      "repeat": 5,
+      "best_s": 1.219568619504571,
+      "mean_s": 1.28626349568367,
+      "best_us_per_op": 12.19568619504571,
+      "mean_us_per_op": 12.8626349568367
+    },
+    {
+      "name": "plain_method_def",
+      "loops": 100000,
+      "repeat": 5,
+      "best_s": 0.8238323628902435,
+      "mean_s": 0.879785968735814,
+      "best_us_per_op": 8.238323628902435,
+      "mean_us_per_op": 8.79785968735814
+    },
+    {
+      "name": "call_lambda_trick",
+      "loops": 100000,
+      "repeat": 5,
+      "best_s": 0.008055834099650383,
+      "mean_s": 0.00811346247792244,
+      "best_us_per_op": 0.08055834099650383,
+      "mean_us_per_op": 0.0811346247792244
+    },
+    {
+      "name": "call_cfg_two_method",
+      "loops": 100000,
+      "repeat": 5,
+      "best_s": 0.008000833913683891,
+      "mean_s": 0.010895297676324845,
+      "best_us_per_op": 0.08000833913683891,
+      "mean_us_per_op": 0.10895297676324844
+    },
+    {
+      "name": "call_plain",
+      "loops": 100000,
+      "repeat": 5,
+      "best_s": 0.00795334205031395,
+      "mean_s": 0.00909380502998829,
+      "best_us_per_op": 0.0795334205031395,
+      "mean_us_per_op": 0.09093805029988289
+    }
+  ]
+}
