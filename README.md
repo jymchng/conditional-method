@@ -1,7 +1,4 @@
 <p align="center">
-  <a href="https://pypi.org/project/conditional-method"><img src="https://raw.githubusercontent.com/jymchng/conditional-method/main/assets/conditional-method-logo.png" alt="conditional-method" width="200"></a>
-</p>
-<p align="center">
     <em>Conditionally select which method implementation survives class creation — decided at runtime, at startup, or at class build time.</em>
 </p>
 <p align="center">
