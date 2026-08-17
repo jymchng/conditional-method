@@ -4,7 +4,7 @@
 
 If you discover a security issue in `conditional-method`, **please do not** open a
 public issue. Report it privately via GitHub's
-[security advisory workflow](https://github.com/jymchng/conditional-method/security/advisories/new)
+[security advisory workflow](https://github.com/OWNER/conditional-method/security/advisories/new)
 or by emailing the maintainers.
 
 Please include:

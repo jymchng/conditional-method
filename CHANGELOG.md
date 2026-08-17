@@ -40,7 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`assets/conditional-method-logo.png`), which PyPI cannot render. The
   logo asset was renamed to match the distribution and the README now
   references an absolute URL
-  (`https://raw.githubusercontent.com/jymchng/conditional-method/main/...`),
+  (`https://raw.githubusercontent.com/OWNER/conditional-method/main/...`),
   so the logo displays on the PyPI project page.
 - The logo image was downscaled 1024→512 px (1 MB → ~250 KB) to keep the
   sdist and page loads light.

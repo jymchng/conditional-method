@@ -10,7 +10,7 @@
 #
 # Trusted publishing setup (maintainer, one-time, on PyPI):
 #   1. Register the project "conditional-method" on PyPI (and/or TestPyPI).
-#   2. Add a "publishing source": GitHub Actions, owner jymchng, repo
+#   2. Add a "publishing source": GitHub Actions, owner OWNER, repo
 #      conditional-method, workflow "release.yml", environment "release".
 #   3. The publish job below then authenticates via OIDC with no secrets.
 

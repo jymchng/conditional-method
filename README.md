@@ -1,11 +1,11 @@
 <p align="center">
-  <a href="https://pypi.org/project/conditional-method"><img src="https://raw.githubusercontent.com/jymchng/conditional-method/main/assets/conditional-method-logo.png" alt="conditional-method" width="200"></a>
+  <a href="https://pypi.org/project/conditional-method"><img src="https://raw.githubusercontent.com/OWNER/conditional-method/main/assets/conditional-method-logo.png" alt="conditional-method" width="200"></a>
 </p>
 <p align="center">
     <em>Conditionally select which method implementation survives class creation — decided at runtime, at startup, or at class build time.</em>
 </p>
 <p align="center">
-<a href="https://github.com/jymchng/conditional-method/actions/workflows/ci.yml" target="_blank"><img src="https://github.com/jymchng/conditional-method/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+<a href="https://github.com/OWNER/conditional-method/actions/workflows/ci.yml" target="_blank"><img src="https://github.com/OWNER/conditional-method/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
 <a href="https://pypi.org/project/conditional-method" target="_blank"><img src="https://img.shields.io/pypi/v/conditional-method?color=blue" alt="PyPI version"></a>
 <a href="https://pypi.org/project/conditional-method" target="_blank"><img src="https://img.shields.io/pypi/pyversions/conditional-method.svg?color=blue" alt="Python versions"></a>
 <a href="https://pypi.org/project/conditional-method" target="_blank"><img src="https://img.shields.io/pypi/wheel/conditional-method.svg?color=blue" alt="Wheel"></a>
@@ -14,9 +14,9 @@
 
 ---
 
-**Documentation**: <a href="https://jymchng.github.io/conditional-method/" target="_blank">https://jymchng.github.io/conditional-method/</a>
+**Documentation**: <a href="https://OWNER.github.io/conditional-method/" target="_blank">https://OWNER.github.io/conditional-method/</a>
 
-**Source Code**: <a href="https://github.com/jymchng/conditional-method" target="_blank">https://github.com/jymchng/conditional-method</a>
+**Source Code**: <a href="https://github.com/OWNER/conditional-method" target="_blank">https://github.com/OWNER/conditional-method</a>
 
 ---
 
@@ -136,7 +136,7 @@ def experimental_feature(value): ...
 Decorators are applied in order — but only when `condition` is true.
 
 More examples live in the `examples/` directory and in the
-[documentation](https://jymchng.github.io/conditional-method/).
+[documentation](https://OWNER.github.io/conditional-method/).
 
 ## Debugging
 
@@ -157,8 +157,8 @@ This project is licensed under the terms of the MIT license.
 
 ## Links
 
-- **Documentation**: <https://jymchng.github.io/conditional-method/>
+- **Documentation**: <https://OWNER.github.io/conditional-method/>
 - **Changelog**: [CHANGELOG.md](CHANGELOG.md)
 - **Security**: [SECURITY.md](SECURITY.md)
-- **Source**: <https://github.com/jymchng/conditional-method>
+- **Source**: <https://github.com/OWNER/conditional-method>
 - **PyPI**: <https://pypi.org/project/conditional-method>
