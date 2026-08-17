@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.8] - 2026-08-17
+
+### Fixed
+
+- **Wasm crash with callable conditions** (`@cfg(condition=lambda f: ...)`,
+  `@cfg_attr` with callable conditions, and the factory closure paths):
+  the C extension used the inline `PyTuple_SET_ITEM` / `PyTuple_GET_ITEM` /
+  `PyTuple_GET_SIZE` macros, which read a stale `PyTupleObject` layout on
+  CPython 3.14/wasm (pyodide/Emscripten) and corrupted memory — the runtime
+  died with `RuntimeError: null function or function signature mismatch` as
+  soon as a callable condition was evaluated. All remaining tuple macros were
+  replaced with the real libpython functions (`PyTuple_SetItem`,
+  `PyTuple_GetItem`, `PyTuple_Size`), which are wasm-safe and Limited-API
+  (abi3) clean. The native test suite could not catch this (native CPython's
+  layout differs); the crash was reproduced on pyodide 314.0.3 (the AsyncMove
+  playground runtime).
+
 ## [0.2.7] - 2026-08-17
 
 ### Added
