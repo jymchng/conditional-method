@@ -649,7 +649,18 @@ static PyObject *_cm_inner(PyObject *self, PyObject *args) {
     }
 
     Py_INCREF(func);
-    PyTuple_SET_ITEM(args_tuple, 0, func);
+    /* Use the libpython function form: the inline PyTuple_SET_ITEM macro
+     * reads the PyTupleObject layout at compile time, which is stale on
+     * CPython 3.14/wasm (Emscripten) and corrupts memory there (the same
+     * bug class as PyTuple_GET_ITEM before). PyTuple_SetItem is a real
+     * libpython function that is wasm-safe and part of the Limited API.
+     * It steals func on success; on failure (-1) it does not, so decref. */
+    if (PyTuple_SetItem(args_tuple, 0, func) < 0) {
+      Py_DECREF(func);
+      Py_DECREF(args_tuple);
+      Py_DECREF(f_qualname);
+      return NULL;
+    }
 
     cond_result = PyObject_CallObject(condition, args_tuple);
     Py_DECREF(args_tuple);
@@ -742,14 +753,22 @@ static PyObject *cfg_attr_wrapper(PyObject *self, PyObject *args) {
 
   /* Get closure tuple containing condition and decorators */
   PyObject *closure = self;
-  if (!PyTuple_Check(closure) || PyTuple_GET_SIZE(closure) != 2) {
+  if (!PyTuple_Check(closure) || PyTuple_Size(closure) != 2) {
     PyErr_SetString(PyExc_RuntimeError, "Invalid closure in cfg_attr_wrapper");
     return NULL;
   }
 
-  /* Get condition and decorators from closure */
-  PyObject *condition = PyTuple_GET_ITEM(closure, 0);
-  PyObject *decorators = PyTuple_GET_ITEM(closure, 1);
+  /* Get condition and decorators from closure.
+   * Use the libpython function forms (PyTuple_GetItem / PyTuple_GetSize):
+   * the inline PyTuple_GET_ITEM/GET_SIZE macros read a stale PyTupleObject
+   * layout on CPython 3.14/wasm and corrupt memory there (same bug class as
+   * PyTuple_SET_ITEM; fixed throughout). These are real libpython functions
+   * (wasm-safe, Limited API). */
+  PyObject *condition = PyTuple_GetItem(closure, 0);
+  PyObject *decorators = PyTuple_GetItem(closure, 1);
+  if (condition == NULL || decorators == NULL) {
+    return NULL;
+  }
 
   /* Call cfg_attr with all the arguments */
   CFG_ALLOC_FAIL_GUARD();
@@ -919,8 +938,16 @@ static PyObject *cfg_attr(PyObject *self, PyObject *args, PyObject *kwargs) {
         goto error;
       }
       Py_INCREF(condition);
-      PyTuple_SET_ITEM(closure, 0, condition);
-      PyTuple_SET_ITEM(closure, 1, decorators);
+      /* libpython function forms (wasm-safe; the inline SET_ITEM macro reads
+       * a stale PyTupleObject layout on CPython 3.14/wasm). Each steals its
+       * argument on success; on failure it does not, so decref on error. */
+      if (PyTuple_SetItem(closure, 0, condition) < 0 ||
+          PyTuple_SetItem(closure, 1, decorators) < 0) {
+        Py_DECREF(condition);
+        Py_DECREF(closure);
+        decorators = NULL; /* ownership consumed by the failed SetItem */
+        goto error;
+      }
       decorators = NULL; /* ownership transferred into closure */
       CFG_ALLOC_FAIL_GUARD();
       wrapper = PyCFunction_New(&cfg_attr_wrapper_def, closure);
@@ -1009,8 +1036,13 @@ static PyObject *cfg_attr(PyObject *self, PyObject *args, PyObject *kwargs) {
         goto error;
       }
       Py_INCREF(condition);
-      PyTuple_SET_ITEM(closure, 0, condition);
-      PyTuple_SET_ITEM(closure, 1, decorators);
+      if (PyTuple_SetItem(closure, 0, condition) < 0 ||
+          PyTuple_SetItem(closure, 1, decorators) < 0) {
+        Py_DECREF(condition);
+        Py_DECREF(closure);
+        decorators = NULL;
+        goto error;
+      }
       decorators = NULL; /* ownership transferred into closure */
       wrapper = PyCFunction_New(&cfg_attr_wrapper_def, closure);
       if (wrapper == NULL) {
@@ -1036,8 +1068,13 @@ static PyObject *cfg_attr(PyObject *self, PyObject *args, PyObject *kwargs) {
       goto error;
     }
     Py_INCREF(condition);
-    PyTuple_SET_ITEM(closure, 0, condition);
-    PyTuple_SET_ITEM(closure, 1, decorators);
+    if (PyTuple_SetItem(closure, 0, condition) < 0 ||
+        PyTuple_SetItem(closure, 1, decorators) < 0) {
+      Py_DECREF(condition);
+      Py_DECREF(closure);
+      decorators = NULL;
+      goto error;
+    }
     decorators = NULL; /* ownership transferred into closure */
     wrapper = PyCFunction_New(&cfg_attr_wrapper_def, closure);
     if (wrapper == NULL) {
