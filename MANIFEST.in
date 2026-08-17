@@ -1,0 +1,17 @@
+# Keep the sdist lean: ship only buildable sources + essential metadata.
+# (Wheels only contain the built packages + dist-info regardless; the .c
+# sources stay because source installs from the sdist need them to build.)
+
+prune .github
+prune .vscode
+prune assets
+prune benchmarks
+prune docs
+prune examples
+prune scripts
+prune test-assets
+prune tests
+exclude .gitignore
+exclude .python-version
+exclude mkdocs.yml
+exclude noxfile.py
