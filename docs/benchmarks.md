@@ -5,6 +5,10 @@
 - **Standalone** — `python benchmarks/bench.py` runs a reproducible timeit
   harness (100 000 loops, 5 repeats) and writes
   `benchmarks/results/results.json` (committed) plus a table to stdout.
+- **Closures in a class** — `python benchmarks/bench_cfg_closure.py` measures
+  `@cfg` with closure conditions on class methods (definition time and call
+  time vs plain/runtime-if baselines); writes
+  `benchmarks/results/results_cfg_closure.json` (committed).
 - **pytest-benchmark** — `nox -s benchmark` runs `tests/benchmark.py` with
   `pytest-benchmark`, giving statistical comparison across runs.
 
@@ -42,3 +46,44 @@ Environment: CPython 3.13, linux x86_64, `conditional-method` 0.2.0.dev41.
   decorator with equivalent logic would be several times slower per call.
 
 Reproduce locally: `python benchmarks/bench.py`.
+
+## @cfg with closures in a class
+
+Environment: CPython 3.13.13, linux x86_64, `conditional-method` 0.2.6.dev1.
+(Full JSON in `benchmarks/results/results_cfg_closure.json`.)
+
+Definition time (per iteration: build the class inside a factory; methods
+close over an enclosing `env` variable):
+
+| scenario | best µs/op | mean µs/op |
+|---|---|---|
+| plain_class_def | 8.930 | 10.897 |
+| cfg_class_closure_def | 12.758 | 13.398 |
+| cfg_class_closure_callable_def | 12.695 | 13.252 |
+| cfg_class_two_conditions_def | 12.843 | 13.364 |
+
+Call time (class built once, method called per op; methods read the closure
+cell):
+
+| scenario | best µs/op | mean µs/op |
+|---|---|---|
+| call_plain_method | 0.087 | 0.088 |
+| call_cfg_method | 0.078 | 0.079 |
+| call_runtime_if | 0.105 | 0.106 |
+
+### Interpretation
+
+- **Closure conditions work with `@cfg` on class methods** — a `bool`
+  condition closing over an enclosing variable, a callable condition
+  (`lambda f: env == ...`), and two complementary conditions all select the
+  intended method (sanity-checked: returns `'prod'`).
+- **Definition cost is bounded**: a class with `@cfg`-gated closure methods
+  takes ~13 µs to build vs ~9 µs for a plain class (+~1.4×, a one-time
+  class-build-time cost). Callable-closure conditions cost the same as
+  bool-closure ones.
+- **Call-time payoff**: the `@cfg`-selected method call (0.078 µs) is faster
+  than both the plain method (0.087 µs) and the runtime-`if` baseline it
+  replaces (0.105 µs, ~26% faster) — selection happens once at class-build
+  time, not per call.
+
+Reproduce locally: `python benchmarks/bench_cfg_closure.py`.
