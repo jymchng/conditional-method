@@ -75,6 +75,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
+      # Limit simultaneous runners: GitHub-hosted provisioning intermittently
+      # fails with 'Set up job' errors when many matrix jobs start at once.
+      max-parallel: 6
       matrix:
         include:
           - os: ubuntu-latest
