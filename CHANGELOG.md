@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.5] - 2026-08-17
+
+### Changed
+
+- **Docs/README scrubbed of personal identifiers**: the GitHub username
+  `jymchng` is replaced with an `OWNER` placeholder across README, docs,
+  CHANGELOG, SECURITY.md and mkdocs.yml, so the PyPI description and docs no
+  longer expose the maintainer's handle.
+
 ## [0.2.4] - 2026-08-16
 
 ### Fixed
