@@ -1,22 +1,32 @@
-"""Benchmark: ``@cfg`` with closures inside a class (conditional-method).
+"""Benchmark: ``@cfg`` with the class-body closure pattern (conditional-method).
 
-Measures two axes for methods that close over an enclosing variable (a
-class built inside a factory function, methods referencing ``env``):
+The pattern under test is the nested-factory closure inside a class body:
 
-  Definition time (per-iteration class build + decoration):
-    plain_class_def              class with a plain method closing over env
-    cfg_class_closure_def        @cfg(condition=env == "prod") selecting one of
-                                 two same-named methods (closure bool condition)
-    cfg_class_closure_callable_def  @cfg(condition=lambda f: env == "prod")
-                                 (callable condition closed over env)
-    cfg_class_two_conditions_def two @cfg methods with complementary closure
-                                 conditions (prod/dev split)
+    class Worker:
+        def make():
+            def work(self): ...      # inner function closes over make's scope
+            return work
+        work = make()                # class body assigns the closure
 
-  Call time (instance method calls; the class is built once):
-    call_plain_method            plain method reading the closure cell
-    call_cfg_method              @cfg-selected method (cached, reads closure)
-    call_runtime_if              baseline: method does the env check at runtime
-                                 (the pattern @cfg replaces at class-build time)
+``make()`` builds a method as a closure; ``@cfg`` applied to the inner
+``work`` decides at decoration time whether it is kept (and cached) or
+replaced by a ``TypeErrorRaiser``.
+
+Measured axes:
+
+  Definition time (the class is rebuilt every iteration):
+    plain_closure_def            work = make() with a plain inner function
+    cfg_closure_true_def         @cfg(condition=True) on the inner work
+    cfg_closure_cond_def         @cfg(condition=<cell>) - condition closes
+                                 over an enclosing variable
+    cfg_closure_select_def       two make() factories (prod/dev); the class
+                                 body assigns the selected one
+
+  Call time (class built once; method called per iteration):
+    call_plain_closure           Worker().work() - plain closure method
+    call_cfg_closure             Worker().work() - @cfg-kept closure method
+    call_runtime_if              baseline: the method does the check at call
+                                 time (the pattern @cfg replaces at build time)
 
 Results are written to benchmarks/results/results_cfg_closure.json and a
 human-readable table is printed.
@@ -42,112 +52,126 @@ PROD = "production"
 DEV = "development"
 
 
-# --- definition-time scenarios: each returns a callable that REBUILDS the class ---
-def plain_class_def():
-    def make():
-        env = PROD
+# --- definition-time scenarios: each rebuilds the class per iteration ---
+def plain_closure_def():
+    def build():
+        def make():
+            def work(self):
+                return 1
+
+            return work
 
         class Worker:
-            def work(self):
-                return env
+            work = make()
 
         return Worker
 
-    return lambda: make()
+    return lambda: build()
 
 
-def cfg_class_closure_def():
-    def make():
-        env = PROD
+def cfg_closure_true_def():
+    def build():
+        def make():
+            @cfg(condition=True)
+            def work(self):
+                return 1
+
+            return work
 
         class Worker:
+            work = make()
+
+        return Worker
+
+    return lambda: build()
+
+
+def cfg_closure_cond_def():
+    def build():
+        enabled = True  # a cell the condition closes over
+
+        def make():
+            @cfg(condition=enabled)
+            def work(self):
+                return 1
+
+            return work
+
+        class Worker:
+            work = make()
+
+        return Worker
+
+    return lambda: build()
+
+
+def cfg_closure_select_def():
+    def build():
+        env = PROD
+
+        def make_prod():
             @cfg(condition=env == PROD)
             def work(self):
                 return "prod"
 
+            return work
+
+        def make_dev():
             @cfg(condition=env == DEV)
             def work(self):
                 return "dev"
 
-        return Worker
-
-    return lambda: make()
-
-
-def cfg_class_closure_callable_def():
-    def make():
-        env = PROD
+            return work
 
         class Worker:
-            @cfg(condition=lambda f: env == PROD)
-            def work(self):
-                return "prod"
-
-            @cfg(condition=lambda f: env == DEV)
-            def work(self):
-                return "dev"
+            work = make_prod()  # selected at class-build time
 
         return Worker
 
-    return lambda: make()
+    return lambda: build()
 
 
-def cfg_class_two_conditions_def():
+# --- call-time scenarios: class built once, method called per iteration ---
+def call_plain_closure():
     def make():
-        env = PROD
-        # two independent conditions, both closures over env
-        is_prod = lambda: env == PROD  # noqa: E731
+        def work(self):
+            return 1
 
-        class Worker:
-            @cfg(condition=is_prod())
-            def work(self):
-                return "prod"
-
-            @cfg(condition=not is_prod())
-            def work(self):
-                return "dev"
-
-        return Worker
-
-    return lambda: make()
-
-
-# --- call-time scenarios: class built ONCE, then method called per iteration ---
-def call_plain_method():
-    env = PROD
+        return work
 
     class Worker:
-        def work(self):
-            return env
+        work = make()
 
     w = Worker()
     return lambda: w.work()
 
 
-def call_cfg_method():
-    env = PROD
+def call_cfg_closure():
+    def make():
+        @cfg(condition=True)
+        def work(self):
+            return 1
+
+        return work
 
     class Worker:
-        @cfg(condition=env == PROD)
-        def work(self):
-            return "prod"
-
-        @cfg(condition=env == DEV)
-        def work(self):
-            return "dev"
+        work = make()
 
     w = Worker()
     return lambda: w.work()
 
 
 def call_runtime_if():
-    env = PROD
+    def make():
+        def work(self):
+            if True:
+                return 1
+            return 2
+
+        return work
 
     class Worker:
-        def work(self):
-            if env == PROD:
-                return "prod"
-            return "dev"
+        work = make()
 
     w = Worker()
     return lambda: w.work()
@@ -155,13 +179,13 @@ def call_runtime_if():
 
 SCENARIOS = {
     # definition-time
-    "plain_class_def": plain_class_def,
-    "cfg_class_closure_def": cfg_class_closure_def,
-    "cfg_class_closure_callable_def": cfg_class_closure_callable_def,
-    "cfg_class_two_conditions_def": cfg_class_two_conditions_def,
+    "plain_closure_def": plain_closure_def,
+    "cfg_closure_true_def": cfg_closure_true_def,
+    "cfg_closure_cond_def": cfg_closure_cond_def,
+    "cfg_closure_select_def": cfg_closure_select_def,
     # call-time
-    "call_plain_method": call_plain_method,
-    "call_cfg_method": call_cfg_method,
+    "call_plain_closure": call_plain_closure,
+    "call_cfg_closure": call_cfg_closure,
     "call_runtime_if": call_runtime_if,
 }
 
@@ -200,35 +224,48 @@ def main() -> None:
     RESULTS_PATH.parent.mkdir(parents=True, exist_ok=True)
     RESULTS_PATH.write_text(json.dumps(doc, indent=2) + "\n")
 
-    print(f"conditional-method {__version__} — @cfg with closures in a class "
+    print(f"conditional-method {__version__} — @cfg class-body closure pattern "
           f"({N} loops, {REPEAT} repeats)")
     print(f"env: {env['python']} on {env['machine']} ({env['platform'][:40]})")
     print("-" * 72)
-    print(f"{'scenario':30} {'best us/op':>12} {'mean us/op':>12}")
+    print(f"{'scenario':26} {'best us/op':>12} {'mean us/op':>12}")
     print("-" * 72)
     for r in results:
-        print(f"{r['name']:30} {r['best_us_per_op']:12.3f} {r['mean_us_per_op']:12.3f}")
+        print(f"{r['name']:26} {r['best_us_per_op']:12.3f} {r['mean_us_per_op']:12.3f}")
     print("-" * 72)
 
-    # quick sanity: selected methods behave correctly
-    from conditional_method import cfg as _cfg  # noqa: F401
+    # sanity: the pattern behaves correctly
+    def make():
+        @cfg(condition=True)
+        def work(self):
+            return "kept"
 
-    def _sanity():
-        env = PROD
+        return work
 
-        class Worker:
-            @cfg(condition=env == PROD)
-            def work(self):
-                return "prod"
+    class Worker:
+        work = make()
 
-            @cfg(condition=env == DEV)
-            def work(self):
-                return "dev"
+    assert Worker().work() == "kept", Worker().work()
 
-        return Worker().work()
+    # a condition=False method inside a class body makes class creation fail
+    # (TypeErrorRaiser.__set_name__) - a build-time guard, not a call-time drop
+    def make_false():
+        @cfg(condition=False)
+        def work(self):
+            return "dropped"
 
-    assert _sanity() == "prod", _sanity()
-    print(f"sanity: closure-selected method returns {_sanity()!r}")
+        return work
+
+    try:
+
+        class Worker2:
+            work = make_false()
+
+        raise AssertionError("expected TypeError at class creation for condition=False")
+    except TypeError:
+        pass
+
+    print("sanity: kept closure method returns 'kept'; condition=False guards class creation")
     print(f"wrote {RESULTS_PATH}")
 
 

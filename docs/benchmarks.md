@@ -5,9 +5,10 @@
 - **Standalone** — `python benchmarks/bench.py` runs a reproducible timeit
   harness (100 000 loops, 5 repeats) and writes
   `benchmarks/results/results.json` (committed) plus a table to stdout.
-- **Closures in a class** — `python benchmarks/bench_cfg_closure.py` measures
-  `@cfg` with closure conditions on class methods (definition time and call
-  time vs plain/runtime-if baselines); writes
+- **Class-body closure pattern** — `python benchmarks/bench_cfg_closure.py`
+  measures `@cfg` on the nested-factory closure pattern
+  (`work = make()` in a class body): definition time and call time vs
+  plain/runtime-if baselines; writes
   `benchmarks/results/results_cfg_closure.json` (committed).
 - **pytest-benchmark** — `nox -s benchmark` runs `tests/benchmark.py` with
   `pytest-benchmark`, giving statistical comparison across runs.
@@ -47,43 +48,56 @@ Environment: CPython 3.13, linux x86_64, `conditional-method` 0.2.0.dev41.
 
 Reproduce locally: `python benchmarks/bench.py`.
 
-## @cfg with closures in a class
+## @cfg with the class-body closure pattern
 
 Environment: CPython 3.13.13, linux x86_64, `conditional-method` 0.2.6.dev1.
 (Full JSON in `benchmarks/results/results_cfg_closure.json`.)
 
-Definition time (per iteration: build the class inside a factory; methods
-close over an enclosing `env` variable):
+The pattern under test is a nested factory inside a class body that builds a
+method as a closure:
+
+```python
+class Worker:
+    def make():                      # factory defined in the class body
+        @cfg(condition=True)         # selection happens at decoration time
+        def work(self): ...
+        return work                  # returns the (possibly cfg-kept) closure
+    work = make()                    # class body assigns the closure
+```
+
+Definition time (per iteration: rebuild the class, `work = make()`):
 
 | scenario | best µs/op | mean µs/op |
 |---|---|---|
-| plain_class_def | 8.930 | 10.897 |
-| cfg_class_closure_def | 12.758 | 13.398 |
-| cfg_class_closure_callable_def | 12.695 | 13.252 |
-| cfg_class_two_conditions_def | 12.843 | 13.364 |
+| plain_closure_def | 9.866 | 10.556 |
+| cfg_closure_true_def | 11.078 | 11.350 |
+| cfg_closure_cond_def | 11.006 | 11.888 |
+| cfg_closure_select_def | 11.687 | 12.696 |
 
-Call time (class built once, method called per op; methods read the closure
-cell):
+Call time (class built once, method called per op):
 
 | scenario | best µs/op | mean µs/op |
 |---|---|---|
-| call_plain_method | 0.087 | 0.088 |
-| call_cfg_method | 0.078 | 0.079 |
-| call_runtime_if | 0.105 | 0.106 |
+| call_plain_closure | 0.076 | 0.108 |
+| call_cfg_closure | 0.075 | 0.120 |
+| call_runtime_if | 0.077 | 0.085 |
 
 ### Interpretation
 
-- **Closure conditions work with `@cfg` on class methods** — a `bool`
-  condition closing over an enclosing variable, a callable condition
-  (`lambda f: env == ...`), and two complementary conditions all select the
-  intended method (sanity-checked: returns `'prod'`).
-- **Definition cost is bounded**: a class with `@cfg`-gated closure methods
-  takes ~13 µs to build vs ~9 µs for a plain class (+~1.4×, a one-time
-  class-build-time cost). Callable-closure conditions cost the same as
-  bool-closure ones.
-- **Call-time payoff**: the `@cfg`-selected method call (0.078 µs) is faster
-  than both the plain method (0.087 µs) and the runtime-`if` baseline it
-  replaces (0.105 µs, ~26% faster) — selection happens once at class-build
-  time, not per call.
+- **`@cfg` works with the class-body closure pattern** — `work = make()`
+  where `make()` returns an inner function decorated with `@cfg` selects and
+  caches the method at class-build time (sanity-checked: returns `'kept'`).
+  A condition closing over an enclosing cell (`condition=enabled`) and a
+  prod/dev selection via two `make()` factories behave identically.
+- **Definition cost is small**: adding `@cfg` to the closure method costs
+  ~11 µs vs ~10 µs for a plain `work = make()` (+~12%, a one-time
+  class-build-time cost).
+- **Call time is unchanged**: calling the `@cfg`-kept closure method
+  (0.075 µs) is the same as a plain closure method (0.076 µs) — selection
+  happens once at class-build time, not per call. (Best-case values; means
+  are noisy at this scale.)
+- **Guard behavior**: a `condition=False` method in this pattern makes
+  **class creation fail** (`TypeErrorRaiser.__set_name__` raises TypeError) —
+  it is a build-time guard, not a per-call drop.
 
 Reproduce locally: `python benchmarks/bench_cfg_closure.py`.
