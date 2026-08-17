@@ -65,7 +65,11 @@ jobs:
   build_wheels_release:
     name: Build wheel FULL (${{ matrix.os }} ${{ matrix.arch }})
     runs-on: ${{ matrix.os }}
-    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref_type == 'tag')
+    # On tag pushes the release.yml pipeline already builds the identical
+    # full matrix; running it here too doubles the parallel runner demand and
+    # has caused "Set up job" runner-provisioning failures.  Keep the full
+    # matrix available via manual workflow_dispatch.
+    if: github.event_name == 'workflow_dispatch'
     strategy:
       fail-fast: false
       matrix:
