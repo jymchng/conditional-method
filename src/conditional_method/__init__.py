@@ -11,7 +11,9 @@ pure-Python implementation. This package file is only an import shim.
 from importlib.metadata import PackageNotFoundError, version
 
 from ._c import (
+    _get_failed,
     _get_mod_qual_func_name,
+    assert_all_true,
     cfg,
     cfg_attr,
     cm,
@@ -30,6 +32,8 @@ __all__ = [
     "if_",
     "cm",
     "_get_mod_qual_func_name",
+    "assert_all_true",
+    "_get_failed",
     "cfg_attr",
     "debug",
     "debug_enabled",

@@ -73,7 +73,95 @@ def test_sweep_raiser_with_qualnames():
             pass
 
     ops = [scenario]
-    _run_sweep(ops, max_idx=60)
+    _run_sweep(ops, max_idx=90)
+
+
+def test_sweep_assert_all_true_with_failures():
+    """Sweep allocation failures across assert_all_true/_get_failed with a
+    failing name present, so the new error branches (list build, join,
+    format, PySet_Add/Discard) are covered."""
+
+    def scenario():
+        c._cm_cache.clear()
+        c._failed_qualnames.clear()
+        c.cm(lambda: 1, condition=False)  # records a failure (may MemoryError)
+        c._get_failed()
+        c.assert_all_true()
+
+    ops = [scenario]
+    _run_sweep(ops, max_idx=80)
+
+
+def test_sweep_all_public_paths():
+    """Sweep allocation failures across every public code path so the
+    CFG_ALLOC_TEST_FAIL error branches in cfg_debug, CfgCallable_new_wrapper,
+    _raise_exec, _cm_wrapper, cm (factory + direct), _cm_inner,
+    cfg_attr_wrapper, cfg_attr_apply_decorators, cfg_make_raiser,
+    assert_all_true and _get_failed are covered.  Each path gets a dedicated
+    sweep (fresh counter) so its guards fire at their own allocation index."""
+
+    def _reset():
+        c._cm_cache.clear()
+        c._cfg_attr_cache.clear()
+        c._failed_qualnames.clear()
+
+    def scenario_debug():
+        _reset()
+        c.debug("x")
+
+    def scenario_cm_true():
+        _reset()
+        c.cm(lambda: 1, condition=True)
+
+    def scenario_cm_false():
+        _reset()
+        c.cm(lambda: 1, condition=False)
+
+    def scenario_cm_factory():
+        _reset()
+        c.cm(condition=False)
+
+    _dec_holder: list = []
+
+    def scenario_cm_wrapper_call():
+        _reset()
+        if not _dec_holder:
+            _dec_holder.append(c.cm(condition=False))
+        _dec_holder[0](lambda: 1)
+
+    def scenario_cfg_attr_true():
+        _reset()
+        c.cfg_attr(lambda: 1, condition=True, decorators=[lambda f: f])
+
+    def scenario_cfg_attr_false():
+        _reset()
+        c.cfg_attr(lambda: 1, condition=False, decorators=[])
+
+    def scenario_cfg_attr_factory():
+        _reset()
+        c.cfg_attr(condition=False)
+
+    def scenario_cfg_attr_wrapper():
+        _reset()
+        c.cfg_attr_wrapper(lambda: 1)
+
+    def scenario_assert():
+        _reset()
+        c.cm(lambda: 1, condition=False)
+        c.assert_all_true()
+        c._get_failed()
+
+    for op in (
+        scenario_cm_true,
+        scenario_cm_false,
+        scenario_cm_factory,
+        scenario_cm_wrapper_call,
+        scenario_cfg_attr_true,
+        scenario_cfg_attr_false,
+        scenario_cfg_attr_factory,
+        scenario_assert,
+    ):
+        _run_sweep([op], max_idx=120)
 
 
 def test_cfg_callable_uninitialized_call():

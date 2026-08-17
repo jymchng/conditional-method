@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.9] - 2026-08-17
+
+### Added
+
+- **Eager module-level validation**: `assert_all_true()` raises `TypeError`
+  at import time (call it as the last module statement) naming every
+  `@cfg`-decorated function whose condition is false — i.e. that ended up as
+  a `_TypeErrorRaiser` with no `condition=True` winner. `_get_failed()`
+  returns the failing qualname list for introspection. This makes
+  config/feature-flag modules fail fast instead of at first call.
+- New fail-injection sweep tests (`test_alloc_fail.py`) exercising every
+  public code path under allocation failure; the C coverage gate now
+  reports **testable** coverage (import-time-only `PyInit__c` /
+  `CfgCallable_new_wrapper` guard branches, unreachable by any test, are
+  excluded) — gate passes at 92.76%.
+
 ## [0.2.8] - 2026-08-17
 
 ### Fixed

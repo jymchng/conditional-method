@@ -135,6 +135,35 @@ def experimental_feature(value): ...
 
 Decorators are applied in order — but only when `condition` is true.
 
+### Fail fast at import with `assert_all_true()`
+
+For config / feature-flag modules, put `assert_all_true()` as the last
+module statement so a disabled feature raises `TypeError` at import time
+instead of at first call:
+
+```python
+from conditional_method import cfg, assert_all_true
+
+
+@cfg(condition=ENABLE_FEATURE_A)
+def feature_a(): ...
+
+
+@cfg(condition=ENABLE_FEATURE_B)
+def feature_b(): ...
+
+
+assert_all_true()  # TypeError at import if any condition is false
+```
+
+Use `_get_failed()` to inspect which names are affected:
+
+```python
+from conditional_method import _get_failed
+
+_get_failed()  # e.g. ['__main__.feature_a']
+```
+
 More examples live in the `examples/` directory and in the
 [documentation](https://jymchng.github.io/conditional-method/).
 

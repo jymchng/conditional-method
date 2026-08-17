@@ -11,6 +11,8 @@ from conditional_method import (
     if_,
     cm,
     cfg_attr,
+    assert_all_true,
+    _get_failed,
     debug,
     debug_enabled,
 )
@@ -47,6 +49,37 @@ export __conditional_method_debug__=true
 Internal helper returning `module.qualname` for a function, unwrapping
 `__wrapped__` / `__func__` / `fget` as needed. Raises `TypeError` when no
 name can be determined.
+
+### `assert_all_true() -> None`
+
+Eager module-level validation: raises `TypeError` naming **every** decorated
+name whose condition is false (i.e. that ended up as a `_TypeErrorRaiser`
+with no `condition=True` winner). Returns `None` when all conditions are
+true.
+
+Call it as the last line of a config/feature-flag module to fail fast at
+import time instead of at first call:
+
+```python
+from conditional_method import cfg, assert_all_true
+
+
+@cfg(condition=ENABLE_FEATURE_A)
+def feature_a(): ...
+
+
+@cfg(condition=ENABLE_FEATURE_B)
+def feature_b(): ...
+
+
+assert_all_true()  # raises TypeError at import if any feature is disabled
+```
+
+### `_get_failed() -> list[str]`
+
+Returns the list of qualified names whose cached value is a `_TypeErrorRaiser`
+(empty when all conditions are true). Useful for introspection and tests; it
+is what `assert_all_true()` checks under the hood.
 
 ## `conditional_method._c` internals
 

@@ -152,6 +152,14 @@ static PyMethodDef cfg_attr_wrapper_def = {
 /* Module level caches: one for cm/cfg/if_, one for cfg_attr */
 static PyObject *_cm_cache = NULL;
 static PyObject *_cfg_attr_cache = NULL;
+/* Set of qualnames whose current cached value is a TypeErrorRaiser (i.e.
+ * decorated names that ended up with no true condition).  Populated in
+ * _cm_inner's false path and in the cfg_attr raiser paths; a later
+ * condition=True winner removes its qualname.  This is NOT cleared by
+ * TypeErrorRaiser_new (which clears the caches for runtime last-wins
+ * semantics) so that multiple independent failures remain visible to
+ * assert_all_true()/_get_failed(). */
+static PyObject *_failed_qualnames = NULL;
 
 /* TypeErrorRaiser type declaration */
 typedef struct {
@@ -181,22 +189,28 @@ static int TypeErrorRaiser_clear(TypeErrorRaiserObject *self) {
 }
 
 static void TypeErrorRaiser_finalize(TypeErrorRaiserObject *Py_UNUSED(self)) {
-  /* Clear the caches */
+  /* Clear the caches and the recorded failures */
   if (_cm_cache != NULL) {
     PyDict_Clear(_cm_cache);
   }
   if (_cfg_attr_cache != NULL) {
     PyDict_Clear(_cfg_attr_cache);
+  }
+  if (_failed_qualnames != NULL) {
+    PySet_Clear(_failed_qualnames);
   }
 }
 
 static void _raise_typeerror(TypeErrorRaiserObject *self) {
-  /* Clear the caches */
+  /* Clear the caches and the recorded failures */
   if (_cm_cache != NULL) {
     PyDict_Clear(_cm_cache);
   }
   if (_cfg_attr_cache != NULL) {
     PyDict_Clear(_cfg_attr_cache);
+  }
+  if (_failed_qualnames != NULL) {
+    PySet_Clear(_failed_qualnames);
   }
 
   /* Join the qualnames for the error message */
@@ -723,6 +737,14 @@ static PyObject *_cm_inner(PyObject *self, PyObject *args) {
       Py_DECREF(f_qualname);
       return NULL;
     }
+    /* A true winner clears any recorded failure for this name. */
+    if (_failed_qualnames != NULL) {
+      int discarded = PySet_Discard(_failed_qualnames, f_qualname);
+      if (discarded < 0) {
+        Py_DECREF(f_qualname);
+        return NULL;
+      }
+    }
     Py_DECREF(f_qualname);
     Py_INCREF(func);
     return func;
@@ -750,6 +772,27 @@ static PyObject *_cm_inner(PyObject *self, PyObject *args) {
     Py_DECREF(f_qualname);
     Py_DECREF(raiser);
     return NULL;
+  }
+
+  /* Record the raiser in the module cache under the qualname so the eager
+   * validation helpers (assert_all_true/_get_failed) can find names whose
+   * condition is false.  A later `condition=True` winner for the same name
+   * overwrites this entry (the cache is keyed by qualname). */
+  if (PyDict_SetItem(_cm_cache, f_qualname, raiser) < 0 ||
+      CFG_ALLOC_TEST_FAIL()) {
+    Py_DECREF(f_qualname);
+    Py_DECREF(raiser);
+    return NULL;
+  }
+  /* Record the failure in the dedicated set (survives TypeErrorRaiser_new's
+   * cache clearing so multiple independent failures stay visible). */
+  if (_failed_qualnames != NULL) {
+    if (PySet_Add(_failed_qualnames, f_qualname) < 0 ||
+        CFG_ALLOC_TEST_FAIL()) {
+      Py_DECREF(f_qualname);
+      Py_DECREF(raiser);
+      return NULL;
+    }
   }
 
   Py_DECREF(f_qualname);
@@ -836,6 +879,12 @@ static PyObject *cfg_attr_apply_decorators(PyObject *func, PyObject *decorators,
       Py_DECREF(func);
       return NULL;
     }
+    if (f_qualname != NULL && _failed_qualnames != NULL) {
+      if (PySet_Discard(_failed_qualnames, f_qualname) < 0) {
+        Py_DECREF(func);
+        return NULL;
+      }
+    }
     return func;
   }
   result = func;
@@ -867,6 +916,11 @@ static PyObject *cfg_attr_apply_decorators(PyObject *func, PyObject *decorators,
         CFG_ALLOC_TEST_FAIL()) {
       goto error;
     }
+    if (_failed_qualnames != NULL) {
+      if (PySet_Discard(_failed_qualnames, f_qualname) < 0) {
+        goto error;
+      }
+    }
   }
   return result;
 error:
@@ -875,7 +929,8 @@ error:
 }
 
 /* Helper: create a TypeErrorRaiser for a false-conditioned function
-   (shared by cm and cfg_attr). Adds f_qualname to the raiser's set. */
+   (shared by cm and cfg_attr). Adds f_qualname to the raiser's set and to
+   the module-level _failed_qualnames set (visible to assert_all_true). */
 static PyObject *cfg_make_raiser(PyObject *f_qualname) {
   CFG_ALLOC_FAIL_GUARD();
   PyObject *raiser_args = Py_BuildValue("(O)", f_qualname);
@@ -893,6 +948,14 @@ static PyObject *cfg_make_raiser(PyObject *f_qualname) {
       CFG_ALLOC_TEST_FAIL()) {
     Py_DECREF(raiser);
     return NULL;
+  }
+  /* Record the failure so assert_all_true/_get_failed can report it. */
+  if (_failed_qualnames != NULL) {
+    if (PySet_Add(_failed_qualnames, f_qualname) < 0 ||
+        CFG_ALLOC_TEST_FAIL()) {
+      Py_DECREF(raiser);
+      return NULL;
+    }
   }
   return raiser;
 }
@@ -1120,6 +1183,82 @@ error:
   return NULL;
 }
 
+/* --- Eager validation: assert_all_true() -------------------------------
+ *
+ * Module-level ``@cfg(condition=False)`` decorations return a
+ * TypeErrorRaiser *immediately* (the function itself is replaced), but the
+ * error only fires when the name is *called*.  For config/flag-style
+ * modules you often want to fail at import time when a decorated name ended
+ * up with no true condition.  ``assert_all_true()`` scans the module-level
+ * cache and raises a TypeError naming every qualified function whose cached
+ * value is a TypeErrorRaiser (i.e. no ``condition=True`` winner).  It is a
+ * no-op (returns None) when everything is satisfied.
+ *
+ * ``_get_failed()`` returns the same list as a Python list of qualname
+ * strings (empty when all conditions are true) — used by tests and by
+ * ``assert_all_true`` itself.
+ */
+
+static PyObject *cfg_get_failed(PyObject *Py_UNUSED(self), PyObject *Py_UNUSED(ignored)) {
+  CFG_ALLOC_FAIL_GUARD();
+  PyObject *result = PyList_New(0);
+  if (result == NULL) {
+    return NULL;
+  }
+  PyObject *iter = PyObject_GetIter(_failed_qualnames);
+  if (iter == NULL) {
+    Py_DECREF(result);
+    return NULL;
+  }
+  PyObject *item;
+  while ((item = PyIter_Next(iter)) != NULL) {
+    if (PyList_Append(result, item) < 0) {
+      Py_DECREF(item);
+      Py_DECREF(iter);
+      Py_DECREF(result);
+      return NULL;
+    }
+    Py_DECREF(item);
+  }
+  Py_DECREF(iter);
+  if (PyErr_Occurred()) {
+    Py_DECREF(result);
+    return NULL;
+  }
+  return result;
+}
+
+static PyObject *cfg_assert_all_true(PyObject *Py_UNUSED(self),
+                                     PyObject *Py_UNUSED(ignored)) {
+  CFG_ALLOC_FAIL_GUARD();
+  PyObject *failed = cfg_get_failed(NULL, NULL);
+  if (failed == NULL) {
+    return NULL;
+  }
+  Py_ssize_t n = PyList_GET_SIZE(failed);
+  if (n == 0) {
+    Py_DECREF(failed);
+    Py_RETURN_NONE;
+  }
+  PyObject *sep = PyUnicode_FromString(", ");
+  if (sep == NULL) {
+    Py_DECREF(failed);
+    return NULL;
+  }
+  PyObject *joined = PyUnicode_Join(sep, failed);
+  Py_DECREF(sep);
+  Py_DECREF(failed);
+  if (joined == NULL) {
+    return NULL;
+  }
+  PyErr_Format(
+      PyExc_TypeError,
+      "No condition is true for %zd decorated name(s): %U",
+      n, joined);
+  Py_DECREF(joined);
+  return NULL;
+}
+
 /* Named method definitions (used for module aliases in PyInit__c). */
 static PyMethodDef cm_method_def = {
     "cm", (PyCFunction)(void (*)(void))cm, METH_VARARGS | METH_KEYWORDS,
@@ -1148,6 +1287,11 @@ static PyMethodDef ConditionalMethodMethods[] = {
      "Conditionally apply a chain of decorators to a function."},
     {"debug", cfg_debug, METH_VARARGS, "Log a debug message (noop unless enabled)."},
     {"debug_enabled", cfg_debug_enabled, METH_NOARGS, "Whether debug logging is enabled."},
+    {"assert_all_true", cfg_assert_all_true, METH_NOARGS,
+     "Raise TypeError if any @cfg-decorated name has no true condition; "
+     "otherwise return None."},
+    {"_get_failed", cfg_get_failed, METH_NOARGS,
+     "Return the list of qualnames whose cached value is a TypeErrorRaiser."},
     {"_cm_wrapper", _cm_wrapper, METH_VARARGS,
      "Internal decorator wrapper (exposed for testing)."},
 #ifdef PY_CFG_TESTING
@@ -1198,9 +1342,14 @@ PyMODINIT_FUNC PyInit__c(void) {
   /* Create the module-level caches */
   _cm_cache = PyDict_New();
   _cfg_attr_cache = PyDict_New();
-  if (_cm_cache == NULL || _cfg_attr_cache == NULL) {
+  _failed_qualnames = PySet_New(NULL);
+  if (_cm_cache == NULL || _cfg_attr_cache == NULL || _failed_qualnames == NULL) {
     Py_XDECREF(_cm_cache);
     Py_XDECREF(_cfg_attr_cache);
+    Py_XDECREF(_failed_qualnames);
+    _cm_cache = NULL;
+    _cfg_attr_cache = NULL;
+    _failed_qualnames = NULL;
     Py_DECREF(m);
     return NULL;
   }
@@ -1211,6 +1360,11 @@ PyMODINIT_FUNC PyInit__c(void) {
   }
   if (PyModule_AddObject(m, "_cfg_attr_cache", _cfg_attr_cache) < 0) {
     Py_DECREF(_cfg_attr_cache);
+    Py_DECREF(m);
+    return NULL;
+  }
+  if (PyModule_AddObject(m, "_failed_qualnames", _failed_qualnames) < 0) {
+    Py_DECREF(_failed_qualnames);
     Py_DECREF(m);
     return NULL;
   }

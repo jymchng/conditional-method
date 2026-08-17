@@ -62,6 +62,8 @@ if_ = cfg
 def _get_mod_qual_func_name(func: Any) -> str: ...
 def debug(message: Any) -> None: ...
 def debug_enabled() -> bool: ...
+def assert_all_true() -> None: ...
+def _get_failed() -> list[str]: ...
 
 # The C extension submodule (implementation internals; not part of the
 # public API but importable, e.g. by the legacy `cfg` shim). No stub is
@@ -77,6 +79,8 @@ __all__ = [
     "cm",
     "if_",
     "_get_mod_qual_func_name",
+    "assert_all_true",
+    "_get_failed",
     "debug",
     "debug_enabled",
 ]
