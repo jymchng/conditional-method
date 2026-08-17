@@ -147,10 +147,10 @@ jobs:
         uses: pypa/cibuildwheel@v4.2.0
         with:
           output-dir: dist
-          # pyodide-version is set via [tool.cibuildwheel] pyodide-version in
-          # pyproject.toml (= 314.0.3 -> ABI 2026_0 / Emscripten 5.0.3, the
-          # AsyncMove playground runtime). It is NOT a workflow input for
-          # cibuildwheel v4.
+          # cibuildwheel's default pyodide xbuildenv is used (pyodide-build
+          # 0.39.0 flags the 314.0.3 xbuildenv as incompatible, so it must NOT
+          # be pinned). The produced wheel is tagged pyemscripten_2025_0_wasm32;
+          # the re-tag step below fixes it for the playground's 2026_0 ABI.
 
       - name: Re-tag pyodide wheel to pyemscripten_2026_0_wasm32 (PyPI) + emscripten_5_0_3 (GitHub)
         env:

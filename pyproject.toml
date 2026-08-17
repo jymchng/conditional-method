@@ -93,12 +93,6 @@ show_missing = true
 [tool.cibuildwheel]
 build = "cp39-*"
 archs = ["x86_64", "aarch64", "i686", "ppc64le", "s390x", "armv7l"]
-# Pin the pyodide cross-build environment to 314.0.3 (Emscripten 5.0.3, ABI
-# 2026_0) — the version the AsyncMove playground loads. Without this,
-# cibuildwheel uses its default xbuildenv and tags the wheel
-# pyemscripten_2025_0_wasm32, which micropip 0.11.1 rejects against the
-# runtime's 2026_0 ABI.
-pyodide-version = "314.0.3"
 
 [tool.cibuildwheel.macos]
 archs = ["arm64", "x86_64"]
