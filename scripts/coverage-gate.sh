@@ -40,9 +40,13 @@ if [ ! -f _c.c.gcov ]; then
 fi
 
 # 4. Parse "Lines executed:XX.XX% of NNN" that follows "File 'src/conditional_method/_c.c'".
+#    gcov may emit the same source twice (a partial first pass then the
+#    complete pass, the latter with the higher total); take the LAST
+#    occurrence — the full pass with the authoritative line total.
 SUMMARY=$(echo "$GCOV_OUT" | awk '
   /^File .*src\/conditional_method\/_c.c/ { want=1; next }
-  want && /^Lines executed:[0-9.]+% of [0-9]+/ { print; exit }
+  want && /^Lines executed:[0-9.]+% of [0-9]+/ { summary=$0 }
+  END { if (summary != "") print summary }
 ')
 if [ -z "$SUMMARY" ]; then
   echo "ERROR: could not parse coverage summary for _c.c from gcov output" >&2

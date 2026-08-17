@@ -63,11 +63,13 @@ method as a closure:
 
 ```python
 class Worker:
-    def make():                      # factory defined in the class body
-        @cfg(condition=True)         # selection happens at decoration time
+    def make():  # factory defined in the class body
+        @cfg(condition=True)  # selection happens at decoration time
         def work(self): ...
-        return work                  # returns the (possibly cfg-kept) closure
-    work = make()                    # class body assigns the closure
+
+        return work  # returns the (possibly cfg-kept) closure
+
+    work = make()  # class body assigns the closure
 ```
 
 Definition time (per iteration: rebuild the class, `work = make()`):
@@ -121,11 +123,16 @@ class Worker:
     @lambda f: f()
     def work():
         if ENV == "PROD":
-            def work(self, item: int): ...   # closure returned as the method
+
+            def work(self, item: int): ...  # closure returned as the method
+
             return work
         if ENV == "DEV":
+
             def work(self, item: int): ...
+
             return work
+
 
 # 2) @cfg conditional selection (same-named methods, conditions over ENV)
 class Worker:

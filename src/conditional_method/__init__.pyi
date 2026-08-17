@@ -17,6 +17,7 @@ Note: cfg_attr applies arbitrary decorators, which may transform the
 function's type; we preserve the original type as a best-effort (the C
 extension keeps the wrapped callable).
 """
+
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
@@ -26,7 +27,6 @@ _F = TypeVar("_F", bound=Callable[..., Any])
 
 Condition = bool | Callable[[Callable[..., Any]], bool]
 
-
 @overload
 def cfg(func: _F, *, condition: Condition) -> _F: ...
 @overload
@@ -35,8 +35,6 @@ def cfg(func: _F, condition: Condition) -> _F: ...
 def cfg(*, condition: Condition) -> Callable[[_F], _F]: ...
 @overload
 def cfg(condition: Condition) -> Callable[[_F], _F]: ...
-
-
 @overload
 def cfg_attr(
     func: _F,
@@ -57,16 +55,13 @@ def cfg_attr(
     decorators: Sequence[Callable[..., Any]] = ...,
 ) -> Callable[[_F], _F]: ...
 
-
 # Aliases: cm and if_ are the same object as cfg.
 cm = cfg
 if_ = cfg
 
-
 def _get_mod_qual_func_name(func: Any) -> str: ...
 def debug(message: Any) -> None: ...
 def debug_enabled() -> bool: ...
-
 
 # The C extension submodule (implementation internals; not part of the
 # public API but importable, e.g. by the legacy `cfg` shim). No stub is

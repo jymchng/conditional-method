@@ -120,11 +120,13 @@ def call_lambda_trick():
         @lambda f: f()
         def work():
             if ENV == "PROD":
+
                 def work(self, item: int):
                     return item
 
                 return work
             if ENV == "DEV":
+
                 def work(self, item: int):
                     return item
 
@@ -202,8 +204,10 @@ def main() -> None:
     RESULTS_PATH.parent.mkdir(parents=True, exist_ok=True)
     RESULTS_PATH.write_text(json.dumps(doc, indent=2) + "\n")
 
-    print(f"conditional-method {__version__} — @lambda f: f() trick vs @cfg "
-          f"({N} loops, {REPEAT} repeats)")
+    print(
+        f"conditional-method {__version__} — @lambda f: f() trick vs @cfg "
+        f"({N} loops, {REPEAT} repeats)"
+    )
     print(f"env: {env['python']} on {env['machine']} ({env['platform'][:40]})")
     print("-" * 72)
     print(f"{'scenario':26} {'best us/op':>12} {'mean us/op':>12}")

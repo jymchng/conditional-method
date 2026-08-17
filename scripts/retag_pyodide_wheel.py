@@ -23,6 +23,7 @@ Writes <name>-...-emscripten_<ver>_wasm32.whl next to each input wheel (a
 no-op if the wheel already carries an `emscripten_*_wasm32` tag) and prints
 the resulting filename.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -75,7 +76,8 @@ def retag(path: Path, emscripten_version: str) -> Path | None:
         new_wheel_data = PLATFORM_TOKEN_RE.sub(new_platform, wheel_data)
         if new_wheel_data == wheel_data:
             print(
-                f"WARN: no (py)emscripten platform token found in WHEEL for {path.name}",
+                f"WARN: no (py)emscripten platform token found in WHEEL "
+                f"for {path.name}",
                 file=sys.stderr,
             )
 
@@ -90,9 +92,11 @@ def retag(path: Path, emscripten_version: str) -> Path | None:
 
         record_lines = []
         for name, data in entries:
-            digest = base64.urlsafe_b64encode(
-                hashlib.sha256(data).digest()
-            ).rstrip(b"=").decode()
+            digest = (
+                base64.urlsafe_b64encode(hashlib.sha256(data).digest())
+                .rstrip(b"=")
+                .decode()
+            )
             record_lines.append(f"{name},sha256={digest},{len(data)}")
         record_data = ("\n".join(record_lines) + "\n" + f"{record_meta},,\n").encode()
 

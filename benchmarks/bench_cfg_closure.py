@@ -224,8 +224,10 @@ def main() -> None:
     RESULTS_PATH.parent.mkdir(parents=True, exist_ok=True)
     RESULTS_PATH.write_text(json.dumps(doc, indent=2) + "\n")
 
-    print(f"conditional-method {__version__} — @cfg class-body closure pattern "
-          f"({N} loops, {REPEAT} repeats)")
+    print(
+        f"conditional-method {__version__} — @cfg class-body closure pattern "
+        f"({N} loops, {REPEAT} repeats)"
+    )
     print(f"env: {env['python']} on {env['machine']} ({env['platform'][:40]})")
     print("-" * 72)
     print(f"{'scenario':26} {'best us/op':>12} {'mean us/op':>12}")
@@ -265,7 +267,10 @@ def main() -> None:
     except TypeError:
         pass
 
-    print("sanity: kept closure method returns 'kept'; condition=False guards class creation")
+    print(
+        "sanity: kept closure method returns 'kept'; "
+        "condition=False guards class creation"
+    )
     print(f"wrote {RESULTS_PATH}")
 
 

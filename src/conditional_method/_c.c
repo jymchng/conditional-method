@@ -246,6 +246,19 @@ static void _raise_typeerror(TypeErrorRaiserObject *self) {
       Py_DECREF(joined_qualnames);
       return;
     }
+    /* Preserve the historical UnicodeEncodeError for unencodable qualnames
+     * (e.g. lone surrogates): the old PyUnicode_AsUTF8 path raised on
+     * surrogates, but that function is not in the Limited API (3.9-abi3).
+     * PyUnicode_AsEncodedString(utf-8) is abi3-safe and raises the same
+     * UnicodeEncodeError for unencodable input; we only need the side
+     * effect, so discard the encoded bytes. */
+    PyObject *enc = PyUnicode_AsEncodedString(qualname, "utf-8", NULL);
+    if (enc == NULL || CFG_ALLOC_TEST_FAIL_VOID()) {
+      Py_XDECREF(enc);
+      Py_DECREF(joined_qualnames);
+      return;
+    }
+    Py_DECREF(enc);
   }
 
   /* Check if the joined qualnames is empty */
