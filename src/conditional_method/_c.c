@@ -142,7 +142,7 @@ static PyMethodDef cfg_attr_wrapper_def = {
     "cfg_attr_wrapper", (PyCFunction)cfg_attr_wrapper, METH_VARARGS,
     "Wrapper function for cfg_attr when used as a decorator"};
 
-/* Module level caches: one for cm/cfg/if_/conditional_method, one for cfg_attr */
+/* Module level caches: one for cm/cfg/if_, one for cfg_attr */
 static PyObject *_cm_cache = NULL;
 static PyObject *_cfg_attr_cache = NULL;
 
@@ -346,7 +346,7 @@ static PyTypeObject TypeErrorRaiserType = {
 };
 
 /* --- CfgCallable: a callable heap type with an instance __dict__ ---
-   Used for the module-level aliases (cfg/cm/if_/conditional_method/cfg_attr)
+   Used for the module-level aliases (cfg/cm/if_/cfg_attr)
    so that `cm._cache` / `cfg_attr._cache` are accessible, matching the
    pure-Python reference API. */
 typedef struct {

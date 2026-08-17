@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.7] - 2026-08-17
+
+### Added
+
+- **PEP 561 type stubs**: `conditional_method/__init__.pyi` ships in the
+  wheel (and sdist), giving editors/type checkers precise signatures for the
+  C-extension API via `@overload` — `@cfg(condition=...)` / `@cm` / `@if_`
+  (factory, direct, and positional-condition forms), `@cfg_attr`
+  (with `decorators=[...]`), plus `debug`, `debug_enabled`,
+  `_get_mod_qual_func_name`, `__version__`. The stubs cover only the real
+  runtime exports; the nonexistent `conditional_method` import alias is not
+  stubbed.
+
+### Changed
+
+- **Docs match reality**: `docs/api.md` and the package docstring no longer
+  claim a `conditional_method` import alias (it was never exported by the C
+  module); `docs/errors.md` error heading corrected to the actual message
+  (`@cfg`). The legacy `cfg` shim's `py.typed` marker is restored so it
+  ships typed-consistent with its package-data declaration.
+- **Release pipeline**: the pyodide wheel is now built against the pinned
+  `314.0.3` xbuildenv (`[tool.cibuildwheel] pyodide-version`) and re-tagged
+  into two variants — `pyemscripten_2026_0_wasm32` (published to PyPI so
+  `micropip.install("conditional-method")` works from the playground's
+  Packages tab) and `emscripten_5_0_3_wasm32` (GitHub Release asset for
+  direct-URL installs). PyPI upload excludes only the non-py `emscripten`
+  variant.
+
 ## [0.2.6] - 2026-08-17
 
 ### Changed

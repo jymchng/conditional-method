@@ -2,7 +2,7 @@
 
 This page describes every error `conditional-method` can raise and when.
 
-## `TypeError: \`@conditional_method\` must be used as a decorator and \`condition\` must be specified ...`
+## `TypeError: \`@cfg\` must be used as a decorator and \`condition\` must be specified ...`
 
 Raised when `@cfg` is used without a condition:
 

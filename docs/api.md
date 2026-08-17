@@ -10,7 +10,6 @@ from conditional_method import (
     cfg,
     if_,
     cm,
-    conditional_method,
     cfg_attr,
     debug,
     debug_enabled,
@@ -20,7 +19,7 @@ from conditional_method import (
 ### `@cfg(condition=...)`
 
 Conditional method selection. Aliases: `@cm`, `@if_`
-— all four are the **same object** (`cm is if_ is conditional_method is cfg`
+— all three are the **same object** (`cm is if_ is cfg`
 is `True`).
 
 - `condition: bool | Callable[[Callable], bool]` — required.

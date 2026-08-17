@@ -2,7 +2,7 @@
 
 Public API::
 
-    from conditional_method import cm, cfg, if_, conditional_method, cfg_attr
+    from conditional_method import cfg, cm, if_, cfg_attr
 
 The entire implementation is a C extension module (``conditional_method._c``); there
 pure-Python implementation. This package file is only an import shim.
