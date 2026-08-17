@@ -14,7 +14,7 @@ pip install conditional-method
 ## Install from source
 
 ```bash
-git clone https://github.com/OWNER/conditional-method.git
+git clone https://github.com/jymchng/conditional-method.git
 cd conditional-method
 uv sync --group dev --group test --group build
 uv run python setup.py build_ext --inplace

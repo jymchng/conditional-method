@@ -3,9 +3,9 @@ site_description: >-
   A decorator @cfg that selects a method implementation among those that are
   identically named on a class at class build time — leaving only the selected
   method in its attribute set.
-site_url: https://OWNER.github.io/conditional-method/
-repo_url: https://github.com/OWNER/conditional-method
-repo_name: OWNER/conditional-method
+site_url: https://jymchng.github.io/conditional-method/
+repo_url: https://github.com/jymchng/conditional-method
+repo_name: jymchng/conditional-method
 theme:
   name: material
   palette:
