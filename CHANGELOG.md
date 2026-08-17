@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.6] - 2026-08-17
+
+### Changed
+
+- **Leaner source distribution**: added a `MANIFEST.in` that prunes
+  nonessential files from the sdist (`.github/`, `.vscode/`, `assets/`,
+  `benchmarks/`, `docs/`, `examples/`, `scripts/`, `test-assets/`, `tests/`,
+  plus CI/dev config). The sdist now ships only the buildable sources
+  (`src/` including the C source needed for source installs) and essential
+  metadata (README, LICENSE, CHANGELOG, SECURITY, pyproject.toml, setup.py)
+  — from ~110 entries down to ~24. Wheels were already package + dist-info
+  only and are unchanged.
+
 ## [0.2.5] - 2026-08-17
 
 ### Changed
