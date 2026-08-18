@@ -77,9 +77,18 @@ assert_all_true()  # raises TypeError at import if any feature is disabled
 
 ### `_get_failed() -> list[str]`
 
-Returns the list of qualified names whose cached value is a `_TypeErrorRaiser`
-(empty when all conditions are true). Useful for introspection and tests; it
-is what `assert_all_true()` checks under the hood.
+Returns the list of qualified names whose decorated condition ended up with
+no true winner (i.e. that became a `_TypeErrorRaiser`; empty when all
+conditions are true). Useful for introspection and tests; it is what
+`assert_all_true()` checks under the hood.
+
+The recorded failures are **append-only per name**: `_failed_qualnames`
+grows as false-only names are decorated and is *not* wiped when a raiser is
+created or called. A name is removed from the list only when a later
+`condition=True` winner for that same name resolves it (or when the set is
+cleared explicitly, e.g. `conditional_method._c._failed_qualnames.clear()`).
+This means `assert_all_true()`/`_get_failed()` report **every** failing name
+across the module/process, not just the most recent one.
 
 ## `conditional_method._c` internals
 
@@ -88,11 +97,12 @@ public API):
 
 | Name | Purpose |
 | --- | --- |
-| `_cm_cache` / `_cfg_attr_cache` | module-level implementation caches |
+| `_cm_cache` / `_cfg_attr_cache` | module-level implementation caches; values are **weakrefs** to true-condition winners (and strong refs to `_TypeErrorRaiser` placeholders), so they do not pin functions/modules alive after their class is collected. Swept of dead entries once they exceed an internal high-water mark |
 | `_TypeErrorRaiser` | placeholder object raising `TypeError` on call/`__set_name__` |
 | `_CfgCallable` | callable heap type wrapping the module aliases (`cm._cache`) |
 | `_raise_exec` | create a `_TypeErrorRaiser` |
 | `_cm_wrapper` / `cfg_attr_wrapper` | internal decorator wrappers |
+| `_failed_qualnames` | append-only set of names with no true winner (backing `_get_failed`/`assert_all_true`) |
 | `set_alloc_fail_count` | **test-only** (`PY_CFG_TESTING` builds) allocation-failure injection |
 
 ## Errors

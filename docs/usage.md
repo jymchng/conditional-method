@@ -86,5 +86,12 @@ Each `@cfg` decorator evaluates its condition and either:
 
 When the class body executes, the raiser's `__set_name__` fires: if a
 condition was true for that qualname, the cached implementation replaces the
-raiser; otherwise class creation fails. The cache is cleared strategically
-to prevent leaks between unrelated names.
+raiser; otherwise class creation fails.
+
+Selections are cached per qualified name and survive only as **weak
+references** (they are swept once their class is garbage-collected and the
+cache passes an internal high-water mark), so the module caches do not pin
+methods -- or their modules -- alive for the lifetime of the process. The
+cache entry for a true winner must persist long enough for a later
+`condition=False` decoration of the *same* name to resolve it during class
+build; it is never cleared or deleted on a true result.

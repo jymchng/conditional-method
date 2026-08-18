@@ -6,9 +6,13 @@ These cover:
 - multiple failing names are all listed
 - adding a true winner clears the raiser (cache keyed by qualname)
 - cfg_attr raisers are also visible to the validation
-- calling a raiser clears the caches (no stale failures)
+- calling a raiser does NOT clear the recorded failures (append-only
+  _failed_qualnames); it only clears the selection caches
 - true winners are not reported
+- weakref based caches prune dead entries (no unbounded growth)
 """
+
+import gc
 
 import pytest
 
@@ -102,17 +106,118 @@ def test_cfg_attr_raiser_visible():
         assert_all_true()
 
 
-def test_raiser_call_clears_failures():
-    """Calling a raiser clears the caches, so _get_failed becomes empty."""
+def test_raiser_call_keeps_failures():
+    """Calling a raiser raises TypeError but does NOT clear the recorded
+    failures: _failed_qualnames is append-only per name, so assert_all_true
+    and _get_failed keep reporting the name until a true winner resolves it
+    (or the set is cleared explicitly)."""
 
     @cfg(condition=False)
     def h():  # noqa: F811
         return 1
 
-    assert _get_failed() == [_loc("test_raiser_call_clears_failures.<locals>.h")]
+    assert _get_failed() == [_loc("test_raiser_call_keeps_failures.<locals>.h")]
     with pytest.raises(TypeError):
         h()
-    assert _get_failed() == []
+    # New #4 behavior: the failure persists after calling the raiser.
+    assert _get_failed() == [_loc("test_raiser_call_keeps_failures.<locals>.h")]
+    with pytest.raises(TypeError, match="No condition is true"):
+        assert_all_true()
+
+
+def test_raiser_call_clears_selection_caches_but_not_failures():
+    """Calling a raiser clears the selection caches (last-wins reset) but the
+    recorded _failed_qualnames is preserved (append-only)."""
+
+    @cfg(condition=True)
+    def win():  # noqa: F811
+        return "ok"
+
+    assert win() == "ok"
+
+    @cfg(condition=False)
+    def loser():  # noqa: F811
+        return "no"
+
+    loc = _loc("test_raiser_call_clears_selection_caches_but_not_failures.<locals>.loser")
+    assert _get_failed() == [loc]
+    with pytest.raises(TypeError):
+        loser()
+    # The failure remains reported (append-only) even though the caches reset.
+    assert _get_failed() == [loc]
+    with pytest.raises(TypeError, match="No condition is true"):
+        assert_all_true()
+
+
+def test_failures_persist_across_multiple_independent_raisers():
+    """#4: all false-only names across the module stay reported, even after
+    creating and calling several raisers (they must not wipe each other)."""
+    locs = []
+
+    @cfg(condition=False)
+    def a1():  # noqa: F811
+        return 1
+    locs.append(_loc("test_failures_persist_across_multiple_independent_raisers.<locals>.a1"))
+
+    @cfg(condition=False)
+    def b1():  # noqa: F811
+        return 2
+    locs.append(_loc("test_failures_persist_across_multiple_independent_raisers.<locals>.b1"))
+
+    # Calling one raiser must not clear the other's recorded failure.
+    with pytest.raises(TypeError):
+        a1()
+    assert sorted(_get_failed()) == sorted(locs)
+
+    # A true winner for one name removes only that name.
+    @cfg(condition=True)
+    def a1():  # noqa: F811
+        return "ok"
+    remaining = [l for l in locs if not l.endswith(".a1")]
+    assert _get_failed() == remaining
+
+
+def test_weakref_cache_prunes_dead_entries():
+    """#1: the module cache stores weakrefs for true winners, so a dropped
+    class's method is not pinned forever, and a high-water-mark sweep keeps
+    the dict itself bounded.  Order-independent: it asserts the bounded-growth
+    invariant rather than exact thresholds."""
+    _c._cm_cache.clear()
+    _c._cfg_attr_cache.clear()
+
+    def build_and_drop(count):
+        for i in range(count):
+            cls = type(f"Prune{i}", (), {"__module__": "leaktest"})
+
+            def m(self, _i=i):  # noqa: ARG005
+                return _i
+
+            m.__qualname__ = f"Prune{i}.m"
+            m.__module__ = "leaktest"
+            setattr(cls, "m", cfg(condition=True)(m))
+        gc.collect()
+
+    # Build a large number of throwaway decorated winners, then garbage
+    # collect them so their weakref referents die.
+    build_and_drop(400)
+    gc.collect()
+
+    def referent_alive(k):
+        v = _c._cm_cache.get(k)
+        return v is not None and v() is not None
+
+    # Nothing keeps these methods alive, so after GC none of the cached
+    # referents is pinned (weakrefs, not strong refs).
+    assert sum(1 for k in list(_c._cm_cache) if referent_alive(k)) == 0
+
+    # A few more writes after the deaths trigger a sweep back under the
+    # high-water mark: the dict is bounded well below the 400 decorated.
+    build_and_drop(20)
+    gc.collect()
+    size = len(_c._cm_cache)
+    assert size < 128, f"cache not bounded after sweep: size={size}"
+    assert sum(1 for k in list(_c._cm_cache) if referent_alive(k)) == 0
+
 
 
 def test_get_failed_after_true_winners_only():

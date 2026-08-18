@@ -157,9 +157,16 @@ static PyObject *_cfg_attr_cache = NULL;
  * _cm_inner's false path and in the cfg_attr raiser paths; a later
  * condition=True winner removes its qualname.  This is NOT cleared by
  * TypeErrorRaiser_new (which clears the caches for runtime last-wins
- * semantics) so that multiple independent failures remain visible to
- * assert_all_true()/_get_failed(). */
+ * semantics) and is NOT cleared by _raise_typeerror: it is append-only per
+ * name so that assert_all_true()/_get_failed() reflect every failure that
+ * had no true winner (not just the most recent one).  A name is only
+ * removed again when a later condition=True winner for that same name
+ * resolves it (PySet_Discard in the true paths). */
 static PyObject *_failed_qualnames = NULL;
+/* The `weakref.ref` type, grabbed from the `weakref` module at init and
+ * held for the module lifetime.  Used to distinguish weakref cache values
+ * (true winners) from strong ones (type-error raisers) in cache_get_live. */
+static PyObject *CFG_weakref_ref_type = NULL;
 
 /* TypeErrorRaiser type declaration */
 typedef struct {
@@ -202,15 +209,16 @@ static void TypeErrorRaiser_finalize(TypeErrorRaiserObject *Py_UNUSED(self)) {
 }
 
 static void _raise_typeerror(TypeErrorRaiserObject *self) {
-  /* Clear the caches and the recorded failures */
+  /* Clear the caches (runtime last-wins reset: a new raiser means the
+   * selection state should start fresh).  Deliberately do NOT clear the
+   * recorded _failed_qualnames: it is append-only per name so that
+   * assert_all_true()/_get_failed() keep reporting every name that ended
+   * up with no true condition, not just the most recent one. */
   if (_cm_cache != NULL) {
     PyDict_Clear(_cm_cache);
   }
   if (_cfg_attr_cache != NULL) {
     PyDict_Clear(_cfg_attr_cache);
-  }
-  if (_failed_qualnames != NULL) {
-    PySet_Clear(_failed_qualnames);
   }
 
   /* Join the qualnames for the error message */
@@ -494,6 +502,120 @@ static PyObject *_raise_exec(PyObject *self, PyObject *args) {
   return raiser;
 }
 
+/* Prune dead-weakref entries from `cache` so the module-global dict does not
+ * grow without bound in long-running processes.  Only removes entries whose
+ * cached value is a weakref whose referent has been garbage-collected;
+ * strong values (TypeErrorRaiser) are never removed here. */
+static PyObject *deref_weakref_live(PyObject *cache, PyObject *key,
+                                    PyObject *val);
+static void cache_prune_dead(PyObject *cache) {
+  if (cache == NULL || CFG_weakref_ref_type == NULL) {
+    return;
+  }
+  PyObject *keys = PyDict_Keys(cache);
+  if (keys == NULL) {
+    return;
+  }
+  Py_ssize_t n = PyList_GET_SIZE(keys);
+  for (Py_ssize_t i = 0; i < n; i++) {
+    PyObject *key = PyList_GET_ITEM(keys, i);
+    PyObject *val = PyDict_GetItem(cache, key);
+    if (val == NULL ||
+        !PyObject_TypeCheck(val, (PyTypeObject *)CFG_weakref_ref_type)) {
+      continue;
+    }
+    PyObject *obj = deref_weakref_live(NULL, NULL, val);
+    if (obj == NULL) {
+      PyDict_DelItem(cache, key);
+    } else {
+      Py_DECREF(obj);
+    }
+  }
+  Py_DECREF(keys);
+}
+
+/* High-water mark for cache sweeps: when either module cache exceeds this
+ * many entries, the next write triggers a full dead-weakref sweep so the
+ * dict does not grow without bound in long-running processes. */
+#define CFG_CACHE_SWEEP_THRESHOLD 128
+
+/* Store `val` under `key` in `cache`, as a weakref when `val` is
+ * weakly-referencable (true-condition winner functions) or as a strong
+ * reference otherwise (TypeErrorRaiser objects, which are not
+ * weakly-referencable).  Weakref values keep the module-global caches from
+ * pinning every selected function (and therefore its module) alive for the
+ * whole process: once the class/function is garbage-collected the entry's
+ * referent dies and is pruned.  Returns 0 on success, -1 on error (leaving
+ * the previous value intact). */
+static int cache_set_weak_or_strong(PyObject *cache, PyObject *key,
+                                    PyObject *val) {
+  PyObject *wr = PyWeakref_NewRef(val, NULL);
+  int rc;
+  if (wr != NULL) {
+    rc = PyDict_SetItem(cache, key, wr);
+    Py_DECREF(wr);
+  } else {
+    /* val is not weakly-referencable: store it strongly. */
+    PyErr_Clear();
+    rc = PyDict_SetItem(cache, key, val);
+  }
+  if (rc < 0) {
+    return -1;
+  }
+  /* Bound the cache: when it has grown beyond a high-water mark (typically
+   * because many throwaway classes were decorated), sweep dead weakref
+   * entries so the dict itself does not grow without bound.  In normal
+   * steady-state (few live entries) this is never reached, so there is no
+   * per-decoration cost. */
+  if (PyDict_Size(cache) > CFG_CACHE_SWEEP_THRESHOLD) {
+    cache_prune_dead(cache);
+  }
+  return 0;
+}
+
+/* Dereference `val` (a weakref) returning a NEW reference to the live
+ * referent, or NULL when the referent has died (pruning the cache entry and
+ * treating it as absent).
+ *
+ * We deliberately use PyWeakref_GetObject + Py_INCREF rather than the newer
+ * PyWeakref_GetRef (CPython 3.13): this extension is built as a `cp39-abi3`
+ * Limited-API wheel that must run on every supported interpreter (3.9+), and
+ * PyWeakref_GetRef is NOT part of the Limited API, so an abi3 wheel compiled
+ * against newer headers would fail to import on older runtimes
+ * ("undefined symbol: PyWeakref_GetRef").  PyWeakref_GetObject is stable ABI
+ * on all supported versions.  Reading under the GIL makes the borrowed-ref
+ * + INCREF safe. */
+static PyObject *deref_weakref_live(PyObject *cache, PyObject *key,
+                                    PyObject *val) {
+  PyObject *obj = PyWeakref_GetObject(val);
+  if (obj == Py_None) {
+    /* referent is gone: prune and treat as absent */
+    if (cache != NULL) {
+      PyDict_DelItem(cache, key);
+    }
+    return NULL;
+  }
+  Py_INCREF(obj);
+  return obj;
+}
+
+/* Read `cache[key]`, returning a NEW reference to the live cached value.
+ * A weakref value is dereferenced; a dead weakref is pruned and treated as
+ * absent.  A strong value (TypeErrorRaiser) is returned as-is.  Returns NULL
+ * when there is no live entry for `key`. */
+static PyObject *cache_get_live(PyObject *cache, PyObject *key) {
+  PyObject *val = PyDict_GetItem(cache, key);
+  if (val == NULL) {
+    return NULL;
+  }
+  if (CFG_weakref_ref_type != NULL &&
+      PyObject_TypeCheck(val, (PyTypeObject *)CFG_weakref_ref_type)) {
+    return deref_weakref_live(cache, key, val);
+  }
+  Py_INCREF(val);
+  return val;
+}
+
 /* Function to get the fully qualified name of a function */
 static PyObject *_get_func_name(PyObject *self, PyObject *func) {
   PyObject *module = NULL;
@@ -730,9 +852,9 @@ static PyObject *_cm_inner(PyObject *self, PyObject *args) {
     return NULL;
   }
 
-  /* If the condition is true, add the function to the cache and return it */
+  /* If the condition is true, cache the winner (as a weakref) and return it */
   if (cond_bool) {
-    if (PyDict_SetItem(_cm_cache, f_qualname, func) < 0 ||
+    if (cache_set_weak_or_strong(_cm_cache, f_qualname, func) < 0 ||
         CFG_ALLOC_TEST_FAIL()) {
       Py_DECREF(f_qualname);
       return NULL;
@@ -750,12 +872,11 @@ static PyObject *_cm_inner(PyObject *self, PyObject *args) {
     return func;
   }
 
-  /* If the condition is false, check if the function is in the cache */
-  PyObject *cached_func = PyDict_GetItem(_cm_cache, f_qualname);
+  /* If the condition is false, check if the cache holds a live winner */
+  PyObject *cached_func = cache_get_live(_cm_cache, f_qualname);
   if (cached_func != NULL) {
     Py_DECREF(f_qualname);
-    Py_INCREF(cached_func);
-    return cached_func;
+    return cached_func; /* new reference */
   }
 
   /* If the function is not in the cache, create a TypeErrorRaiser */
@@ -774,11 +895,12 @@ static PyObject *_cm_inner(PyObject *self, PyObject *args) {
     return NULL;
   }
 
-  /* Record the raiser in the module cache under the qualname so the eager
-   * validation helpers (assert_all_true/_get_failed) can find names whose
-   * condition is false.  A later `condition=True` winner for the same name
-   * overwrites this entry (the cache is keyed by qualname). */
-  if (PyDict_SetItem(_cm_cache, f_qualname, raiser) < 0 ||
+  /* Record the raiser in the module cache under the qualname (strong ref —
+   * TypeErrorRaiser is not weakly-referencable) so the eager validation
+   * helpers (assert_all_true/_get_failed) can find names whose condition is
+   * false.  A later `condition=True` winner for the same name overwrites
+   * this entry (the cache is keyed by qualname). */
+  if (cache_set_weak_or_strong(_cm_cache, f_qualname, raiser) < 0 ||
       CFG_ALLOC_TEST_FAIL()) {
     Py_DECREF(f_qualname);
     Py_DECREF(raiser);
@@ -874,7 +996,7 @@ static PyObject *cfg_attr_apply_decorators(PyObject *func, PyObject *decorators,
        cm's cache semantics). */
     Py_INCREF(func);
     if (f_qualname != NULL &&
-        (PyDict_SetItem(_cfg_attr_cache, f_qualname, func) < 0 ||
+        (cache_set_weak_or_strong(_cfg_attr_cache, f_qualname, func) < 0 ||
          CFG_ALLOC_TEST_FAIL())) {
       Py_DECREF(func);
       return NULL;
@@ -912,7 +1034,7 @@ static PyObject *cfg_attr_apply_decorators(PyObject *func, PyObject *decorators,
     result = decorated;
   }
   if (f_qualname != NULL) {
-    if (PyDict_SetItem(_cfg_attr_cache, f_qualname, result) < 0 ||
+    if (cache_set_weak_or_strong(_cfg_attr_cache, f_qualname, result) < 0 ||
         CFG_ALLOC_TEST_FAIL()) {
       goto error;
     }
@@ -1082,13 +1204,12 @@ static PyObject *cfg_attr(PyObject *self, PyObject *args, PyObject *kwargs) {
     if (fq == NULL) {
       goto error;
     }
-    PyObject *cached = PyDict_GetItem(_cfg_attr_cache, fq);
+    PyObject *cached = cache_get_live(_cfg_attr_cache, fq);
     if (cached != NULL) {
       Py_DECREF(fq);
       Py_DECREF(decorators);
       decorators = NULL;
-      Py_INCREF(cached);
-      return cached;
+      return cached; /* new reference */
     }
     PyObject *raiser = cfg_make_raiser(fq);
     Py_DECREF(fq);
@@ -1162,13 +1283,12 @@ static PyObject *cfg_attr(PyObject *self, PyObject *args, PyObject *kwargs) {
   if (fq == NULL) {
     goto error;
   }
-  PyObject *cached = PyDict_GetItem(_cfg_attr_cache, fq);
+  PyObject *cached = cache_get_live(_cfg_attr_cache, fq);
   if (cached != NULL) {
     Py_DECREF(fq);
     Py_DECREF(decorators);
     decorators = NULL;
-    Py_INCREF(cached);
-    return cached;
+    return cached; /* new reference */
   }
   PyObject *raiser = cfg_make_raiser(fq);
   Py_DECREF(fq);
@@ -1365,6 +1485,21 @@ PyMODINIT_FUNC PyInit__c(void) {
   }
   if (PyModule_AddObject(m, "_failed_qualnames", _failed_qualnames) < 0) {
     Py_DECREF(_failed_qualnames);
+    Py_DECREF(m);
+    return NULL;
+  }
+
+  /* Grab the `weakref.ref` type for cache_get_live so it can tell weakref
+   * cache values (true-condition winner functions) apart from strong ones
+   * (TypeErrorRaiser).  Held for the module lifetime. */
+  PyObject *wr_mod = PyImport_ImportModule("weakref");
+  if (wr_mod == NULL) {
+    Py_DECREF(m);
+    return NULL;
+  }
+  CFG_weakref_ref_type = PyObject_GetAttrString(wr_mod, "ref");
+  Py_DECREF(wr_mod);
+  if (CFG_weakref_ref_type == NULL) {
     Py_DECREF(m);
     return NULL;
   }

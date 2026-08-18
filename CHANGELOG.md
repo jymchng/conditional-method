@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.10] - 2026-08-18
+
+### Added
+
+- **Bounded, leak-free module caches** (`_cm_cache` / `_cfg_attr_cache`):
+  true-condition winners are cached as **weak references** instead of strong
+  references, so a `@cfg`-selected function no longer keeps its class and
+  module alive for the whole process after the class is garbage-collected.
+  When either cache grows past an internal high-water mark (128 entries),
+  the next write triggers a sweep that prunes dead weakref entries, keeping
+  long-running processes bounded. `_TypeErrorRaiser` placeholders are stored
+  strongly (they are not weakly referencable) and are never pruned.
+- **Append-only failure tracking**: `_failed_qualnames` (backing
+  `assert_all_true()` / `_get_failed()`) is no longer cleared when a
+  `_TypeErrorRaiser` is created or called. Every name whose condition ended
+  up with no true winner is reported, across all classes in the
+  module/process \u2014 not just the most recent one. A name is removed again
+  only when a later `condition=True` winner for that exact name resolves it
+  (or the set is cleared explicitly).
+
+### Fixed
+
+- **abi3 wheel portability**: the weakref-based cache dereference previously
+  used `PyWeakref_GetRef` (CPython 3.13+), which is **not** part of the
+  Limited API. The `cp39-abi3` wheel compiled against newer headers failed to
+  import on older runtimes (`ImportError: undefined symbol: PyWeakref_GetRef`
+  on Python 3.9/3.12). Dereferencing now uses the portable, stable-ABI
+  `PyWeakref_GetObject` + `Py_INCREF`, verified to import and pass the test
+  suite on Python 3.9, 3.12, 3.13 and 3.14.
+
 ## [0.2.9] - 2026-08-17
 
 ### Added
