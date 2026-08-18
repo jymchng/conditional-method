@@ -155,7 +155,7 @@ jobs:
           # be pinned). The produced wheel is tagged pyemscripten_2025_0_wasm32;
           # the re-tag step below fixes it for the playground's 2026_0 ABI.
 
-      - name: Re-tag pyodide wheel to pyemscripten_2026_0_wasm32 (PyPI) + emscripten_5_0_3 (GitHub)
+      - name: Re-tag pyodide wheel to pyemscripten_2026_0_wasm32
         env:
           PYODIDE_EMSCRIPTEN_VERSION: "5.0.3"
         run: |
@@ -165,10 +165,11 @@ jobs:
           # pyemscripten_2025_0_wasm32 (its default xbuildenv), but the
           # AsyncMove playground runtime (pyodide 314.0.3) reports ABI 2026_0,
           # so micropip 0.11.1 rejects 2025_0. The binary is already compiled
-          # with Emscripten 5.0.3 (ABI-compatible), so we only re-tag:
-          #   - the PyPI wheel  -> pyemscripten_2026_0_wasm32 (accepted by both
-          #     PyPI and micropip 0.11.1 sys_tags; enables Packages-tab installs)
-          #   - a GitHub asset  -> emscripten_5_0_3_wasm32 (direct-URL installs)
+          # with Emscripten 5.0.3 (ABI-compatible), so we re-tag it:
+          #   - the wheel -> pyemscripten_2026_0_wasm32, which is what BOTH
+          #     PyPI and the GitHub Release carry (so GitHub matches PyPI
+          #     file-for-file; there is no separate GitHub-only
+          #     emscripten_5_0_3_wasm32 variant anymore).
           python - <<'EOF'
           import zipfile, base64, hashlib, glob
 
@@ -196,42 +197,32 @@ jobs:
           whls = glob.glob("dist/*.whl")
           assert len(whls) == 1, whls
           src = whls[0]
-          # PyPI wheel: pyemscripten_2026_0_wasm32
           pypi = src.replace("pyemscripten_2025_0_wasm32", "pyemscripten_2026_0_wasm32")
           retag(src, pypi, "pyemscripten_2025_0_wasm32", "pyemscripten_2026_0_wasm32")
-          # GitHub asset: emscripten_5_0_3_wasm32
-          gh = src.replace("pyemscripten_2025_0_wasm32", "emscripten_5_0_3_wasm32")
-          retag(src, gh, "pyemscripten_2025_0_wasm32", "emscripten_5_0_3_wasm32")
-          # keep both; drop the untagged original
+          # drop the untagged original
           import os
           os.remove(src)
           print("wrote:", pypi)
-          print("wrote:", gh)
           EOF
 
-      - name: Verify pyodide wheel tags (pyemscripten_2026_0_wasm32 + emscripten variant)
+      - name: Verify pyodide wheel tag (pyemscripten_2026_0_wasm32)
         run: |
           python - <<'EOF'
           import glob, zipfile
-          whls = [f for f in glob.glob("dist/*.whl") if "emscripten" in f or "pyemscripten" in f]
-          assert len(whls) == 2, f"expected pyemscripten + emscripten wheels, got {whls}"
-          pyem = [w for w in whls if "pyemscripten" in w]
-          em = [w for w in whls if "pyemscripten" not in w]
-          assert len(pyem) == 1 and len(em) == 1, (pyem, em)
+          whls = [f for f in glob.glob("dist/*.whl") if "pyemscripten" in f]
+          assert len(whls) == 1, f"expected exactly one pyemscripten wheel, got {whls}"
           def tag_of(w):
               with zipfile.ZipFile(w) as z:
                   meta = [n for n in z.namelist() if n.endswith("WHEEL")][0]
                   return z.read(meta).decode()
-          assert "pyemscripten_2026_0_wasm32" in tag_of(pyem[0]), tag_of(pyem[0])
-          assert "emscripten_5_0_3_wasm32" in tag_of(em[0]), tag_of(em[0])
-          print(f"OK pyemscripten: {pyem[0]}")
-          print(f"OK emscripten:   {em[0]}")
+          assert "pyemscripten_2026_0_wasm32" in tag_of(whls[0]), tag_of(whls[0])
+          print(f"OK pyemscripten: {whls[0]}")
           EOF
 
       - uses: actions/upload-artifact@v4
         with:
           name: wheels-pyodide
-          path: dist/*emscripten*.whl
+          path: dist/*pyemscripten*.whl
 
   github_release:
     name: Create GitHub Release
@@ -262,9 +253,10 @@ jobs:
           assert any(f.endswith(".tar.gz") for f in files), "missing sdist"
           whls = [f for f in files if f.endswith(".whl")]
           assert len(whls) >= 11, f"expected >=11 wheels (native + pyodide variants), got {len(whls)}"
-          # GitHub Release must carry the emscripten_*_wasm32 variant (the
-          # pyemscripten_2026_0_wasm32 wheel goes to PyPI; both are produced).
-          assert any("emscripten" in f and "pyemscripten" not in f for f in whls), "missing emscripten pyodide wheel variant"
+          # The single pyodide wasm wheel is pyemscripten_2026_0_wasm32; it is
+          # what both PyPI and the GitHub Release carry, so the set matches
+          # PyPI file-for-file (no separate GitHub-only emscripten variant).
+          assert any("pyemscripten" in f for f in whls), "missing pyodide pyemscripten wheel"
           # Every native wheel must carry the cp39-abi3 tag (stable ABI).
           for w in whls:
               if "emscripten" in w:
@@ -323,14 +315,19 @@ jobs:
           merge-multiple: true
           path: dist
 
-      - name: Exclude emscripten variant from PyPI (keep pyemscripten_2026_0_wasm32)
+      - name: Verify only the pyemscripten_2026_0_wasm32 wasm wheel is present (no GitHub-only variant)
         run: |
-          # PyPI accepts pyemscripten_2026_0_wasm32 but rejects the
-          # emscripten_5_0_3_wasm32 variant (400 unsupported platform tag).
-          # The emscripten variant ships as a GitHub Release asset only.
-          # NOTE: match *-emscripten_* (the non-py variant) so we keep the
-          # pyemscripten_2026_0_wasm32 wheel.
-          rm -f dist/*-emscripten_*.whl
+          # The pipeline now produces a single pyodide wheel:
+          # pyemscripten_2026_0_wasm32, which is what both PyPI and the
+          # GitHub Release carry (so the sets match file-for-file). Defensive
+          # guard: fail if an unexpected non-py emscripten_* variant ever
+          # appears so it can never reach GitHub or PyPI.
+          set -euo pipefail
+          if ls dist/*-emscripten_*.whl >/dev/null 2>&1; then
+            echo "unexpected non-py emscripten variant present:" >&2
+            ls -1 dist/*-emscripten_*.whl >&2
+            exit 1
+          fi
           ls -1 dist/
 
       - name: Publish to PyPI (trusted publishing)
