@@ -143,7 +143,10 @@ def test_py_fallback_cfg_attr_staticmethod():
     def helper(x):
         return x + 1
 
-    assert helper(1) == 2
+    # staticmethod objects became callable only in 3.10 (bpo-43682); the
+    # descriptor protocol (__get__) is the portable way to invoke the
+    # wrapped function on all supported versions (3.9+).
+    assert helper.__get__(None, type(helper))(1) == 2
 
 
 def test_py_fallback_assert_all_true_raises_condition_failure_error():
