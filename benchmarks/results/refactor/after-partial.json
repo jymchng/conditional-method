@@ -1,0 +1,110 @@
+{
+  "environment": {
+    "python": "3.13.13",
+    "platform": "Linux-7.0.0-14-generic-x86_64-with-glibc2.43",
+    "implementation": "CPython",
+    "version": "0.2.8.dev0",
+    "machine": "x86_64"
+  },
+  "results": [
+    {
+      "name": "plain_call",
+      "loops": 100000,
+      "repeat": 5,
+      "best_s": 0.0075001902878284454,
+      "mean_s": 0.008173416554927825,
+      "best_us_per_op": 0.07500190287828445,
+      "mean_us_per_op": 0.08173416554927825
+    },
+    {
+      "name": "plain_class",
+      "loops": 100000,
+      "repeat": 5,
+      "best_s": 0.8607853129506111,
+      "mean_s": 0.9541750453412533,
+      "best_us_per_op": 8.607853129506111,
+      "mean_us_per_op": 9.541750453412533
+    },
+    {
+      "name": "cfg_true_decorate",
+      "loops": 100000,
+      "repeat": 5,
+      "best_s": 0.18875923193991184,
+      "mean_s": 0.19292370453476906,
+      "best_us_per_op": 1.8875923193991184,
+      "mean_us_per_op": 1.9292370453476906
+    },
+    {
+      "name": "cfg_false_decorate",
+      "loops": 100000,
+      "repeat": 5,
+      "best_s": 0.185745507478714,
+      "mean_s": 0.20132363587617874,
+      "best_us_per_op": 1.85745507478714,
+      "mean_us_per_op": 2.0132363587617874
+    },
+    {
+      "name": "cfg_callable_decorate",
+      "loops": 100000,
+      "repeat": 5,
+      "best_s": 0.2301584705710411,
+      "mean_s": 0.25967378839850425,
+      "best_us_per_op": 2.301584705710411,
+      "mean_us_per_op": 2.5967378839850426
+    },
+    {
+      "name": "cfg_class_select",
+      "loops": 100000,
+      "repeat": 5,
+      "best_s": 1.3072930704802275,
+      "mean_s": 1.400474813580513,
+      "best_us_per_op": 13.072930704802275,
+      "mean_us_per_op": 14.004748135805128
+    },
+    {
+      "name": "cfg_attr_true_single",
+      "loops": 100000,
+      "repeat": 5,
+      "best_s": 0.537597730755806,
+      "mean_s": 0.6380646459758281,
+      "best_us_per_op": 5.37597730755806,
+      "mean_us_per_op": 6.380646459758282
+    },
+    {
+      "name": "cfg_attr_true_multi",
+      "loops": 100000,
+      "repeat": 5,
+      "best_s": 0.8132471982389688,
+      "mean_s": 0.9657315846532584,
+      "best_us_per_op": 8.132471982389688,
+      "mean_us_per_op": 9.657315846532583
+    },
+    {
+      "name": "cfg_attr_false",
+      "loops": 100000,
+      "repeat": 5,
+      "best_s": 0.3212932478636503,
+      "mean_s": 0.3520170323550701,
+      "best_us_per_op": 3.212932478636503,
+      "mean_us_per_op": 3.5201703235507007
+    },
+    {
+      "name": "call_plain",
+      "loops": 100000,
+      "repeat": 5,
+      "best_s": 0.006993424147367477,
+      "mean_s": 0.00731014609336853,
+      "best_us_per_op": 0.06993424147367477,
+      "mean_us_per_op": 0.07310146093368529
+    },
+    {
+      "name": "call_through_cfg",
+      "loops": 100000,
+      "repeat": 5,
+      "best_s": 0.007445547729730606,
+      "mean_s": 0.007584822550415993,
+      "best_us_per_op": 0.07445547729730606,
+      "mean_us_per_op": 0.07584822550415993
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "note": "partial refactor (#3 strong-ref, #5 True fast-path, #6 amortized sweep); #1/#2/#4 pending",
+  "before_us_per_op": {
+    "plain_call": 0.07152494043111801,
+    "plain_class": 8.563503436744213,
+    "cfg_true_decorate": 1.7909826338291168,
+    "cfg_false_decorate": 1.7187033966183662,
+    "cfg_callable_decorate": 2.0201395452022552,
+    "cfg_class_select": 13.340626768767834,
+    "cfg_attr_true_single": 6.3460396230220795,
+    "cfg_attr_true_multi": 9.942692928016186,
+    "cfg_attr_false": 3.4355542063713074,
+    "call_plain": 0.07377142086625099,
+    "call_through_cfg": 0.07272131741046906
+  },
+  "after_us_per_op": {
+    "plain_call": 0.07837265729904175,
+    "plain_class": 9.047876521945,
+    "cfg_true_decorate": 1.7046556062996387,
+    "cfg_false_decorate": 1.6893724165856838,
+    "cfg_callable_decorate": 2.052694708108902,
+    "cfg_class_select": 12.795917224138975,
+    "cfg_attr_true_single": 5.416714455932379,
+    "cfg_attr_true_multi": 8.432378806173801,
+    "cfg_attr_false": 3.283845502883196,
+    "call_plain": 0.0710083544254303,
+    "call_through_cfg": 0.07188290357589722
+  },
+  "delta_pct": {
+    "plain_call": 9.57,
+    "plain_class": 5.66,
+    "cfg_true_decorate": -4.82,
+    "cfg_false_decorate": -1.71,
+    "cfg_callable_decorate": 1.61,
+    "cfg_class_select": -4.08,
+    "cfg_attr_true_single": -14.64,
+    "cfg_attr_true_multi": -15.19,
+    "cfg_attr_false": -4.42,
+    "call_plain": -3.75,
+    "call_through_cfg": -1.15
+  }
+}

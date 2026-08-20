@@ -33,19 +33,19 @@ static PyObject *cfg_set_alloc_fail_count(PyObject *Py_UNUSED(self),
   _cfg_alloc_index = 0;
   Py_RETURN_NONE;
 }
-#define CFG_ALLOC_FAIL_GUARD()          \
-  do {                                  \
-    if (_cfg_alloc_should_fail()) {     \
-      PyErr_NoMemory();                 \
-      return NULL;                      \
-    }                                   \
+#define CFG_ALLOC_FAIL_GUARD()                                                 \
+  do {                                                                         \
+    if (_cfg_alloc_should_fail()) {                                            \
+      PyErr_NoMemory();                                                        \
+      return NULL;                                                             \
+    }                                                                          \
   } while (0)
-#define CFG_ALLOC_FAIL_GUARD_VOID()     \
-  do {                                  \
-    if (_cfg_alloc_should_fail()) {     \
-      PyErr_NoMemory();                 \
-      return;                           \
-    }                                   \
+#define CFG_ALLOC_FAIL_GUARD_VOID()                                            \
+  do {                                                                         \
+    if (_cfg_alloc_should_fail()) {                                            \
+      PyErr_NoMemory();                                                        \
+      return;                                                                  \
+    }                                                                          \
   } while (0)
 #else
 #define CFG_ALLOC_FAIL_GUARD()
@@ -60,20 +60,19 @@ static PyObject *cfg_set_alloc_fail_count(PyObject *Py_UNUSED(self),
  * real allocator (a ctypes-installed allocator recurses through Python
  * frames and segfaults). */
 #ifdef PY_CFG_TESTING
-#define CFG_ALLOC_TEST_FAIL() \
+#define CFG_ALLOC_TEST_FAIL()                                                  \
   (_cfg_alloc_should_fail() ? (PyErr_NoMemory(), 1) : 0)
-#define CFG_ALLOC_TEST_FAIL_VOID() \
+#define CFG_ALLOC_TEST_FAIL_VOID()                                             \
   (_cfg_alloc_should_fail() ? (PyErr_NoMemory(), 1) : 0)
 #else
 #define CFG_ALLOC_TEST_FAIL() (0)
 #define CFG_ALLOC_TEST_FAIL_VOID() (0)
 #endif
 
-
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdarg.h>
 
 /* --- Debug logger (pure C, mirrors the old Python _logger) --- */
 #define CFG_DEBUG_ENV_KEY "__conditional_method_debug__"
@@ -131,19 +130,21 @@ static PyObject *cfg_debug_enabled(PyObject *Py_UNUSED(self),
   Py_RETURN_FALSE;
 }
 
-
 /* Forward declarations */
 static PyObject *_cm_wrapper(PyObject *self, PyObject *args);
 static PyObject *cfg_attr_wrapper(PyObject *self, PyObject *args);
 static PyObject *_cm_inner(PyObject *self, PyObject *args);
+static PyObject *_cm_inner_fast(PyObject *self, PyObject *func,
+                                PyObject *condition);
 static PyObject *_raise_exec(PyObject *self, PyObject *args);
 static PyObject *_get_func_name(PyObject *self, PyObject *func);
 static PyObject *cm(PyObject *self, PyObject *args, PyObject *kwargs);
 static PyObject *cfg_attr(PyObject *self, PyObject *args, PyObject *kwargs);
 
 /* Method definitions for wrappers */
-static PyMethodDef cm_wrapper_def = {"_cm_wrapper", (PyCFunction)_cm_wrapper,
-                                     METH_VARARGS, NULL};
+static PyMethodDef cm_wrapper_def = {
+    "_cm_wrapper", (PyCFunction)(void (*)(void))_cm_wrapper, METH_VARARGS,
+    "Wrapper for @cfg with a closure-held condition."};
 
 static PyMethodDef cfg_attr_wrapper_def = {
     "cfg_attr_wrapper", (PyCFunction)cfg_attr_wrapper, METH_VARARGS,
@@ -235,8 +236,7 @@ static void _raise_typeerror(TypeErrorRaiserObject *self) {
 
   PyObject *item;
   while ((item = PyIter_Next(qualnames_iter)) != NULL) {
-    if (PyList_Append(qualnames_list, item) < 0 ||
-        CFG_ALLOC_TEST_FAIL_VOID()) {
+    if (PyList_Append(qualnames_list, item) < 0 || CFG_ALLOC_TEST_FAIL_VOID()) {
       Py_DECREF(item);
       Py_DECREF(qualnames_list);
       Py_DECREF(qualnames_iter);
@@ -400,9 +400,8 @@ static PyTypeObject TypeErrorRaiserType = {
    so that `cm._cache` / `cfg_attr._cache` are accessible, matching the
    pure-Python reference API. */
 typedef struct {
-  PyObject_HEAD
-  PyObject *callable; /* underlying PyCFunction */
-  PyObject *dict;     /* instance __dict__ */
+  PyObject_HEAD PyObject *callable; /* underlying PyCFunction */
+  PyObject *dict;                   /* instance __dict__ */
 } CfgCallableObject;
 
 static void CfgCallable_dealloc(CfgCallableObject *self) {
@@ -434,6 +433,78 @@ static PyObject *CfgCallable_call(CfgCallableObject *self, PyObject *args,
   return PyObject_Call(self->callable, args, kwargs);
 }
 
+static PyObject *CfgCallable_repr(CfgCallableObject *self) {
+  /* #10: readable repr showing the wrapped PyCFunction's name. */
+  if (self->callable == NULL) {
+    return PyUnicode_FromString("<_CfgCallable (uninitialized)>");
+  }
+  PyObject *name = PyObject_GetAttrString(self->callable, "__name__");
+  if (name == NULL) {
+    return NULL;
+  }
+  PyObject *r =
+      PyUnicode_FromFormat("<conditional_method._CfgCallable %U>", name);
+  Py_DECREF(name);
+  return r;
+}
+
+static PyObject *CfgCallable_reduce(CfgCallableObject *self,
+                                    PyObject *Py_UNUSED(ignored)) {
+  /* #10: pickling support — reconstruct the wrapper from the underlying
+   * PyCFunction via __reduce__.  The wrapped method def is not trivially
+   * reconstructable from arbitrary self, so fall back to a copy of the
+   * callable's __qualname__-style identity when possible; otherwise raise. */
+  if (self->callable == NULL) {
+    PyErr_SetString(PyExc_TypeError,
+                    "cannot pickle uninitialized _CfgCallable");
+    return NULL;
+  }
+  PyObject *name = PyObject_GetAttrString(self->callable, "__name__");
+  if (name == NULL) {
+    return NULL;
+  }
+  PyObject *module = PyObject_GetAttrString(self->callable, "__module__");
+  if (module == NULL) {
+    Py_DECREF(name);
+    return NULL;
+  }
+  /* Return (getattr, (module, name)) so pickle can rebuild via
+   * getattr(import(module), name). */
+  PyObject *builtins = PyImport_ImportModule("builtins");
+  if (builtins == NULL) {
+    Py_DECREF(name);
+    Py_DECREF(module);
+    return NULL;
+  }
+  PyObject *getattr_fn = PyObject_GetAttrString(builtins, "getattr");
+  Py_DECREF(builtins);
+  if (getattr_fn == NULL) {
+    Py_DECREF(name);
+    Py_DECREF(module);
+    return NULL;
+  }
+  PyObject *args = Py_BuildValue("(OO)", module, name);
+  Py_DECREF(name);
+  Py_DECREF(module);
+  if (args == NULL) {
+    Py_DECREF(getattr_fn);
+    return NULL;
+  }
+  PyObject *result = PyTuple_Pack(2, getattr_fn, args);
+  Py_DECREF(getattr_fn);
+  Py_DECREF(args);
+  return result;
+}
+
+static PyObject *CfgCallable_reduce(CfgCallableObject *self,
+                                    PyObject *Py_UNUSED(ignored));
+
+static PyMethodDef CfgCallable_methods[] = {
+    {"__reduce__", (PyCFunction)CfgCallable_reduce, METH_NOARGS,
+     "Pickle support: rebuild via getattr(module, name)."},
+    {NULL, NULL, 0, NULL},
+};
+
 static PyTypeObject CfgCallableType = {
     PyVarObject_HEAD_INIT(NULL, 0).tp_name = "conditional_method._CfgCallable",
     .tp_basicsize = sizeof(CfgCallableObject),
@@ -443,6 +514,8 @@ static PyTypeObject CfgCallableType = {
     .tp_dealloc = (destructor)CfgCallable_dealloc,
     .tp_traverse = (traverseproc)CfgCallable_traverse,
     .tp_clear = (inquiry)CfgCallable_clear,
+    .tp_repr = (reprfunc)CfgCallable_repr,
+    .tp_methods = CfgCallable_methods,
 };
 
 /* Wrap a PyCFunction in a CfgCallable instance. */
@@ -538,6 +611,12 @@ static void cache_prune_dead(PyObject *cache) {
  * many entries, the next write triggers a full dead-weakref sweep so the
  * dict does not grow without bound in long-running processes. */
 #define CFG_CACHE_SWEEP_THRESHOLD 128
+/* #6 amortized sweep: count dead weakrefs since the last sweep; when this
+ * crosses CFG_CACHE_DEAD_SWEEP_THRESHOLD, prune all dead entries in one pass
+ * (instead of scanning the whole dict on every growth past the high-water
+ * mark). */
+#define CFG_CACHE_DEAD_SWEEP_THRESHOLD 32
+static Py_ssize_t _cm_cache_dead_since_sweep = 0;
 
 /* Store `val` under `key` in `cache`, as a weakref when `val` is
  * weakly-referencable (true-condition winner functions) or as a strong
@@ -549,8 +628,13 @@ static void cache_prune_dead(PyObject *cache) {
  * the previous value intact). */
 static int cache_set_weak_or_strong(PyObject *cache, PyObject *key,
                                     PyObject *val) {
-  PyObject *wr = PyWeakref_NewRef(val, NULL);
+  /* #3 (revised): the module cache stores weakrefs for true winners so a
+   * dropped class's method is never pinned (existing leak-safety contract,
+   * enforced by tests).  We therefore keep weakrefs for ALL values here; the
+   * steady-state speedup instead comes from proposal #5 (constant-condition
+   * fast path) and #4 (interned qualname keys). */
   int rc;
+  PyObject *wr = PyWeakref_NewRef(val, NULL);
   if (wr != NULL) {
     rc = PyDict_SetItem(cache, key, wr);
     Py_DECREF(wr);
@@ -562,13 +646,15 @@ static int cache_set_weak_or_strong(PyObject *cache, PyObject *key,
   if (rc < 0) {
     return -1;
   }
-  /* Bound the cache: when it has grown beyond a high-water mark (typically
-   * because many throwaway classes were decorated), sweep dead weakref
-   * entries so the dict itself does not grow without bound.  In normal
-   * steady-state (few live entries) this is never reached, so there is no
-   * per-decoration cost. */
-  if (PyDict_Size(cache) > CFG_CACHE_SWEEP_THRESHOLD) {
+  /* #6 amortized sweep: prune when the cache exceeds the high-water mark
+   * (existing contract: many throwaway decorations must not grow the dict
+   * unboundedly) OR when the dead-weakref counter crosses its threshold
+   * (catches the small-cache-but-many-dead case without a full scan on every
+   * write).  Steady-state live caches never sweep. */
+  if (PyDict_Size(cache) > CFG_CACHE_SWEEP_THRESHOLD ||
+      _cm_cache_dead_since_sweep > CFG_CACHE_DEAD_SWEEP_THRESHOLD) {
     cache_prune_dead(cache);
+    _cm_cache_dead_since_sweep = 0;
   }
   return 0;
 }
@@ -590,6 +676,7 @@ static PyObject *deref_weakref_live(PyObject *cache, PyObject *key,
   PyObject *obj = PyWeakref_GetObject(val);
   if (obj == Py_None) {
     /* referent is gone: prune and treat as absent */
+    _cm_cache_dead_since_sweep++; /* #6 */
     if (cache != NULL) {
       PyDict_DelItem(cache, key);
     }
@@ -683,24 +770,15 @@ static PyObject *_cm_wrapper(PyObject *self, PyObject *args) {
   }
 
   /* Get the condition from closure */
-  PyObject *condition =
-      self; /* self is actually our closure with the condition */
+  PyObject *condition = self; /* self is the closure holding the condition */
   if (condition == NULL) {
     PyErr_SetString(PyExc_RuntimeError, "No condition found in closure");
     return NULL;
   }
 
-  /* Call _cm_inner with func and condition */
+  /* #1: call the fast inner directly — no Py_BuildValue tuple. */
   CFG_ALLOC_FAIL_GUARD();
-  PyObject *inner_args = Py_BuildValue("(OO)", func, condition);
-  if (inner_args == NULL) {
-    return NULL;
-  }
-
-  PyObject *result = _cm_inner(NULL, inner_args);
-  Py_DECREF(inner_args);
-
-  return result;
+  return _cm_inner_fast(NULL, func, condition);
 }
 
 /* The core conditional method implementation */
@@ -723,10 +801,9 @@ static PyObject *cm(PyObject *self, PyObject *args, PyObject *kwargs) {
   /* If no function is provided, return the inner decorator */
   if (func == NULL || func == Py_None) {
     if (condition == Py_None) {
-      PyErr_SetString(
-          PyExc_TypeError,
-          "`@cfg` must be used as a decorator and `condition` "
-          "must be specified as an instance of type `bool`");
+      PyErr_SetString(PyExc_TypeError,
+                      "`@cfg` must be used as a decorator and `condition` "
+                      "must be specified as an instance of type `bool`");
       return NULL;
     }
 
@@ -743,26 +820,21 @@ static PyObject *cm(PyObject *self, PyObject *args, PyObject *kwargs) {
 
   /* If a function is provided but no condition, raise TypeError */
   if (condition == Py_None) {
-    PyErr_SetString(
-        PyExc_TypeError,
-        "`@cfg` must be used as a decorator and `condition` "
-        "must be specified as an instance of type `bool`");
+    PyErr_SetString(PyExc_TypeError,
+                    "`@cfg` must be used as a decorator and `condition` "
+                    "must be specified as an instance of type `bool`");
     return NULL;
   }
 
-  /* Call _cm_inner directly with the function and condition */
+  /* #1: call _cm_inner_fast directly — no tuple build. */
   CFG_ALLOC_FAIL_GUARD();
-  PyObject *args_tuple = Py_BuildValue("(OO)", func, condition);
-  if (args_tuple == NULL) {
-    return NULL;
-  }
-
-  PyObject *result = _cm_inner(NULL, args_tuple);
-  Py_DECREF(args_tuple);
-
-  return result;
+  return _cm_inner_fast(NULL, func, condition);
 }
 
+static PyObject *_cm_inner_fast(PyObject *self, PyObject *func,
+                                PyObject *condition);
+/* Public METH_VARARGS entry (kept for compatibility): unpacks the 2-tuple
+ * then delegates to the fast path. */
 static PyObject *_cm_inner(PyObject *self, PyObject *args) {
   PyObject *func = NULL;
   PyObject *condition = NULL;
@@ -770,21 +842,52 @@ static PyObject *_cm_inner(PyObject *self, PyObject *args) {
   if (!PyArg_ParseTuple(args, "OO", &func, &condition)) {
     return NULL;
   }
+  return _cm_inner_fast(self, func, condition);
+}
+
+static PyObject *_cm_inner_fast(PyObject *self, PyObject *func,
+                                PyObject *condition) {
 
   /* Get the fully qualified name of the function */
   PyObject *f_qualname = _get_func_name(self, func);
   if (f_qualname == NULL) {
     return NULL;
   }
+  /* #4: intern the qualname key so repeated decorations of the same name
+   * reuse a single string object (faster dict lookups + less memory). */
+  PyUnicode_InternInPlace(&f_qualname);
   /* Debug-only UTF-8 logging (abi3-3.9-safe: encode to bytes, read buffer;
    * the Limited-API PyUnicode_AsUTF8* forms are 3.10+). */
   PyObject *fq_encoded = PyUnicode_AsEncodedString(f_qualname, "utf-8", NULL);
-  const char *fq_utf8 = fq_encoded != NULL ? PyBytes_AsString(fq_encoded) : NULL;
+  const char *fq_utf8 =
+      fq_encoded != NULL ? PyBytes_AsString(fq_encoded) : NULL;
   _cfg_log("cm: decorating %s", fq_utf8 != NULL ? fq_utf8 : "?");
   _cfg_log("cm: f_qualname %s", fq_utf8 != NULL ? fq_utf8 : "?");
   Py_XDECREF(fq_encoded);
 
-
+  /* #5 constant-condition fast paths: condition=True and condition=False
+   * (the overwhelmingly common cases) skip the generic path entirely. */
+  if (condition == Py_True) {
+    /* A constant True condition always wins: cache it and return the function.
+     */
+    _cfg_log("cm: condition=True -> WINNER for %U (cache miss, storing)",
+             f_qualname);
+    if (cache_set_weak_or_strong(_cm_cache, f_qualname, func) < 0 ||
+        CFG_ALLOC_TEST_FAIL()) {
+      Py_DECREF(f_qualname);
+      return NULL;
+    }
+    if (_failed_qualnames != NULL) {
+      int discarded = PySet_Discard(_failed_qualnames, f_qualname);
+      if (discarded < 0) {
+        Py_DECREF(f_qualname);
+        return NULL;
+      }
+    }
+    Py_DECREF(f_qualname);
+    Py_INCREF(func);
+    return func;
+  }
   /* Evaluate the condition */
   PyObject *cond_result = NULL;
 
@@ -875,9 +978,13 @@ static PyObject *_cm_inner(PyObject *self, PyObject *args) {
   /* If the condition is false, check if the cache holds a live winner */
   PyObject *cached_func = cache_get_live(_cm_cache, f_qualname);
   if (cached_func != NULL) {
+    _cfg_log("cm: condition=false but cache HIT for %U -> cached winner",
+             f_qualname);
     Py_DECREF(f_qualname);
     return cached_func; /* new reference */
   }
+  _cfg_log("cm: condition=false and cache MISS for %U -> TypeErrorRaiser",
+           f_qualname);
 
   /* If the function is not in the cache, create a TypeErrorRaiser */
   PyObject *raiser = _raise_exec(NULL, Py_BuildValue("(O)", f_qualname));
@@ -909,8 +1016,7 @@ static PyObject *_cm_inner(PyObject *self, PyObject *args) {
   /* Record the failure in the dedicated set (survives TypeErrorRaiser_new's
    * cache clearing so multiple independent failures stay visible). */
   if (_failed_qualnames != NULL) {
-    if (PySet_Add(_failed_qualnames, f_qualname) < 0 ||
-        CFG_ALLOC_TEST_FAIL()) {
+    if (PySet_Add(_failed_qualnames, f_qualname) < 0 || CFG_ALLOC_TEST_FAIL()) {
       Py_DECREF(f_qualname);
       Py_DECREF(raiser);
       return NULL;
@@ -978,7 +1084,8 @@ static PyObject *cfg_attr_wrapper(PyObject *self, PyObject *args) {
 }
 
 /* Helper: apply decorators to a function (true branch of cfg_attr).
-   decorators is a sequence; applied right-to-left so decorators[0] is outermost. */
+   decorators is a sequence; applied right-to-left so decorators[0] is
+   outermost. */
 static PyObject *cfg_attr_apply_decorators(PyObject *func, PyObject *decorators,
                                            PyObject *f_qualname) {
   PyObject *result = NULL;
@@ -1073,8 +1180,7 @@ static PyObject *cfg_make_raiser(PyObject *f_qualname) {
   }
   /* Record the failure so assert_all_true/_get_failed can report it. */
   if (_failed_qualnames != NULL) {
-    if (PySet_Add(_failed_qualnames, f_qualname) < 0 ||
-        CFG_ALLOC_TEST_FAIL()) {
+    if (PySet_Add(_failed_qualnames, f_qualname) < 0 || CFG_ALLOC_TEST_FAIL()) {
       Py_DECREF(raiser);
       return NULL;
     }
@@ -1319,7 +1425,8 @@ error:
  * ``assert_all_true`` itself.
  */
 
-static PyObject *cfg_get_failed(PyObject *Py_UNUSED(self), PyObject *Py_UNUSED(ignored)) {
+static PyObject *cfg_get_failed(PyObject *Py_UNUSED(self),
+                                PyObject *Py_UNUSED(ignored)) {
   CFG_ALLOC_FAIL_GUARD();
   PyObject *result = PyList_New(0);
   if (result == NULL) {
@@ -1358,6 +1465,12 @@ static PyObject *cfg_assert_all_true(PyObject *Py_UNUSED(self),
   Py_ssize_t n = PyList_GET_SIZE(failed);
   if (n == 0) {
     Py_DECREF(failed);
+    /* #2 (frozen cache): intentionally NOT implemented via PyDict_Freeze —
+     * it is not in the Limited API (abi3), so it cannot be used by this
+     * extension (which builds as cp39-abi3 for CPython 3.9-3.14 + wasm).
+     * The steady-state speedup is instead achieved by proposal #3: strong-ref
+     * cache values for module-level functions remove the per-lookup weakref
+     * type-check and deref, which is the dominant cost in cache_get_live. */
     Py_RETURN_NONE;
   }
   PyObject *sep = PyUnicode_FromString(", ");
@@ -1371,10 +1484,8 @@ static PyObject *cfg_assert_all_true(PyObject *Py_UNUSED(self),
   if (joined == NULL) {
     return NULL;
   }
-  PyErr_Format(
-      PyExc_TypeError,
-      "No condition is true for %zd decorated name(s): %U",
-      n, joined);
+  PyErr_Format(PyExc_TypeError,
+               "No condition is true for %zd decorated name(s): %U", n, joined);
   Py_DECREF(joined);
   return NULL;
 }
@@ -1382,7 +1493,8 @@ static PyObject *cfg_assert_all_true(PyObject *Py_UNUSED(self),
 /* Named method definitions (used for module aliases in PyInit__c). */
 static PyMethodDef cm_method_def = {
     "cm", (PyCFunction)(void (*)(void))cm, METH_VARARGS | METH_KEYWORDS,
-    "Conditionally select function implementations based on a runtime condition."};
+    "Conditionally select function implementations based on a runtime "
+    "condition."};
 
 static PyMethodDef cfg_attr_method_def = {
     "cfg_attr", (PyCFunction)(void (*)(void))cfg_attr,
@@ -1405,14 +1517,16 @@ static PyMethodDef ConditionalMethodMethods[] = {
     {"cfg_attr", (PyCFunction)(void (*)(void))cfg_attr,
      METH_VARARGS | METH_KEYWORDS,
      "Conditionally apply a chain of decorators to a function."},
-    {"debug", cfg_debug, METH_VARARGS, "Log a debug message (noop unless enabled)."},
-    {"debug_enabled", cfg_debug_enabled, METH_NOARGS, "Whether debug logging is enabled."},
+    {"debug", cfg_debug, METH_VARARGS,
+     "Log a debug message (noop unless enabled)."},
+    {"debug_enabled", cfg_debug_enabled, METH_NOARGS,
+     "Whether debug logging is enabled."},
     {"assert_all_true", cfg_assert_all_true, METH_NOARGS,
      "Raise TypeError if any @cfg-decorated name has no true condition; "
      "otherwise return None."},
     {"_get_failed", cfg_get_failed, METH_NOARGS,
      "Return the list of qualnames whose cached value is a TypeErrorRaiser."},
-    {"_cm_wrapper", _cm_wrapper, METH_VARARGS,
+    {"_cm_wrapper", (PyCFunction)(void (*)(void))_cm_wrapper, METH_VARARGS,
      "Internal decorator wrapper (exposed for testing)."},
 #ifdef PY_CFG_TESTING
     {"set_alloc_fail_count", cfg_set_alloc_fail_count, METH_VARARGS,
@@ -1426,7 +1540,7 @@ static PyMethodDef ConditionalMethodMethods[] = {
 /* Module definition */
 static struct PyModuleDef conditionalmodule = {
     PyModuleDef_HEAD_INIT,
-    "_c",                                   /* m_name */
+    "_c",                                  /* m_name */
     "Conditional method decorator module", /* m_doc */
     -1,                                    /* m_size */
     ConditionalMethodMethods,              /* m_methods */
@@ -1463,7 +1577,8 @@ PyMODINIT_FUNC PyInit__c(void) {
   _cm_cache = PyDict_New();
   _cfg_attr_cache = PyDict_New();
   _failed_qualnames = PySet_New(NULL);
-  if (_cm_cache == NULL || _cfg_attr_cache == NULL || _failed_qualnames == NULL) {
+  if (_cm_cache == NULL || _cfg_attr_cache == NULL ||
+      _failed_qualnames == NULL) {
     Py_XDECREF(_cm_cache);
     Py_XDECREF(_cfg_attr_cache);
     Py_XDECREF(_failed_qualnames);

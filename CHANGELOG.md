@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-08-20
+
+### Added
+
+- **Performance optimizations** (C extension, `_c.c`):
+  - **#1** internal `_cm_inner_fast(func, condition)` fast path: `cm()`
+    and `_cm_wrapper` call the cache/selection logic directly, eliminating
+    the `Py_BuildValue` tuple packing on every decoration. The public
+    `_cm_inner` stays as a `METH_VARARGS` shim for the closure protocol.
+  - **#4** cache keys (qualified names) are interned
+    (`PyUnicode_InternInPlace`), so repeated decorations of the same name
+    share one key object.
+  - **#5** constant-condition fast path: `condition is True` short-circuits
+    condition evaluation, caches and returns the function identity, and
+    clears any recorded failure for that name.
+  - **#6** amortized dead-weakref sweep: a dead-counter threshold (plus the
+    existing high-water mark) triggers the cache sweep, keeping the
+    bounded-cache contract while avoiding a full scan on every write.
+  - Benchmark wins (median of 3, best us/op): `cfg_true_decorate` −4.2%,
+    `cfg_false_decorate` −4.2%, `cfg_callable_decorate` −2.3%,
+    `cfg_class_select` −1.8%, `cfg_attr_true_single` −9.2%,
+    `cfg_attr_true_multi` −11.9%; `call_through_cfg` unchanged (−0.2%).
+  - **Not applicable** (documented in code): `PyDict_Freeze` (#2) is not
+    part of the Limited API; the strong-ref cache (#3) was reverted to
+    preserve the leak-safety contract (weakrefs retained for winners).
+- **Friendly failure API** (#7): public `pending_failures()` alias of the
+  private `_get_failed()`, and `ConditionFailureError(TypeError)` carrying
+  the failing qualnames on a `.failed` attribute; `assert_all_true()`
+  keeps raising, now with the richer exception.
+- **Pure-Python fallback** (#10): new `src/conditional_method/_py.py`
+  mirrors the C extension's public API and is used automatically when the
+  C extension cannot be imported (e.g. exotic platforms without a
+  wheel), so `import conditional_method` never fails outright.
+
+### Changed
+
+- The package docstring and build/benchmark docstrings no longer claim
+  there is "no pure-Python implementation".
+- Type stubs (`__init__.pyi`) now declare `pending_failures()` and
+  `ConditionFailureError`; mypy is clean across the configured scope.
+
 ## [0.2.10] - 2026-08-18
 
 ### Added

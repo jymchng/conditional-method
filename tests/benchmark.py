@@ -1,7 +1,8 @@
 """pytest-benchmark benchmarks for the pure-C implementation.
 
-The library is a C extension (``conditional_method._c``); there is no pure-Python
-implementation to compare against. These benchmarks therefore measure the C
+The library is a C extension (``conditional_method._c``); a pure-Python
+fallback (``conditional_method._py``) exists for portability but is not
+benchmarked here. These benchmarks therefore measure the C
 implementation's cost relative to plain Python baselines (no decoration,
 manual if/else, plain decorators).
 

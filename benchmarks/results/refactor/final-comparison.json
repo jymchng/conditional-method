@@ -1,0 +1,42 @@
+{
+  "note": "final comparison: #1 fast inner, #4 interned keys, #5 True fast path, #6 amortized+size sweep, #3 revised (weakrefs preserved). #2 not applicable (PyDict_Freeze not in Limited API).",
+  "before_us_per_op": {
+    "plain_call": 0.07152494043111801,
+    "plain_class": 8.563503436744213,
+    "cfg_true_decorate": 1.7909826338291168,
+    "cfg_false_decorate": 1.7187033966183662,
+    "cfg_callable_decorate": 2.0201395452022552,
+    "cfg_class_select": 13.340626768767834,
+    "cfg_attr_true_single": 6.3460396230220795,
+    "cfg_attr_true_multi": 9.942692928016186,
+    "cfg_attr_false": 3.4355542063713074,
+    "call_plain": 0.07377142086625099,
+    "call_through_cfg": 0.07272131741046906
+  },
+  "after_us_per_op": {
+    "plain_call": 0.08415913209319115,
+    "plain_class": 8.519012555480003,
+    "cfg_true_decorate": 1.716714445501566,
+    "cfg_false_decorate": 1.6466314904391766,
+    "cfg_callable_decorate": 1.9746728986501694,
+    "cfg_class_select": 13.096821401268244,
+    "cfg_attr_true_single": 5.760915502905846,
+    "cfg_attr_true_multi": 8.756213560700417,
+    "cfg_attr_false": 3.529275730252266,
+    "call_plain": 0.07231775671243668,
+    "call_through_cfg": 0.07261455059051514
+  },
+  "delta_pct": {
+    "plain_call": 17.66,
+    "plain_class": -0.52,
+    "cfg_true_decorate": -4.15,
+    "cfg_false_decorate": -4.19,
+    "cfg_callable_decorate": -2.25,
+    "cfg_class_select": -1.83,
+    "cfg_attr_true_single": -9.22,
+    "cfg_attr_true_multi": -11.93,
+    "cfg_attr_false": 2.73,
+    "call_plain": -1.97,
+    "call_through_cfg": -0.15
+  }
+}

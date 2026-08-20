@@ -59,10 +59,21 @@ def cfg_attr(
 cm = cfg
 if_ = cfg
 
+class ConditionFailureError(TypeError):
+    """Raised by ``assert_all_true()`` when decorated names have no true
+    condition.
+
+    Attributes:
+        failed: the list of decorated qualnames with no true winner.
+    """
+
+    failed: list[str]
+
 def _get_mod_qual_func_name(func: Any) -> str: ...
 def debug(message: Any) -> None: ...
 def debug_enabled() -> bool: ...
 def assert_all_true() -> None: ...
+def pending_failures() -> list[str]: ...
 def _get_failed() -> list[str]: ...
 
 # The C extension submodule (implementation internals; not part of the
@@ -80,6 +91,8 @@ __all__ = [
     "if_",
     "_get_mod_qual_func_name",
     "assert_all_true",
+    "pending_failures",
+    "ConditionFailureError",
     "_get_failed",
     "debug",
     "debug_enabled",
