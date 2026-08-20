@@ -2,10 +2,8 @@
 
 The core implementation is a C extension (``conditional_method._c``)
 built with the Limited API / Stable ABI (abi3) so a single ``cp39-abi3``
-wheel covers CPython 3.9+.
-
-A pure-Python fallback (``conditional_method._py``) with the same public
-API is used automatically when the C extension cannot be imported.
+wheel covers CPython 3.9+.  There is no pure-Python implementation; the
+package requires the C extension.
 """
 
 import sys

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+
+- **Pure-Python fallback (`conditional_method._py`)**: the fallback module
+  and its automatic use when the C extension cannot be imported were removed.
+  `import conditional_method` now requires the C extension
+  (`conditional_method._c`), reverting to the pre-0.3.0 behavior; the package
+  is C-only again.
+
 ## [0.3.0] - 2026-08-20
 
 ### Added
