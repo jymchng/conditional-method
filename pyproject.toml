@@ -4,6 +4,38 @@ dynamic = ["version"]
 description = "A decorator `@cfg` that selects a method implementation (among those that are identically named) for a class during class build time, leaving only the selected method in its attributes set when the class is built, i.e. 'well-formed'."
 readme = "README.md"
 requires-python = ">=3.9"
+# PEP 639 licence metadata.
+#
+# PyPI publishes these as the `license_expression` field of its JSON API, and
+# that field is what the shields.io `pypi/l` badge reads (it falls back to a
+# free-text `license` string, then to `License ::` trove classifiers).  Without
+# it the badge renders a red "license | missing".
+#
+# Do NOT also add a `License :: OSI Approved :: MIT License` classifier: PEP 639
+# deprecates it, and setuptools >= 77 errors when an SPDX expression and a
+# licence classifier are declared together.
+license = "MIT"
+license-files = ["LICENSE"]
+keywords = ["decorator", "conditional", "method-selection", "metaprogramming"]
+# Trove classifiers.  The `Programming Language :: Python :: X.Y` entries are
+# what the shields.io `pypi/pyversions` badge parses -- it never looks at
+# `requires-python`, so an empty classifier list makes that badge render a red
+# "python | missing" as well.
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Typed",
+]
 authors = [
     { name="Jim Chng", email="jimchng@outlook.com" }
 ]
@@ -14,7 +46,9 @@ Repository = "https://github.com/jymchng/conditional-method"
 Documentation = "https://jymchng.github.io/conditional-method/"
 
 [build-system]
-requires = ["setuptools>=68", "wheel", "setuptools-scm>=8"]
+# setuptools >= 77 is required for PEP 639 (`project.license` as an SPDX
+# expression + `project.license-files`).
+requires = ["setuptools>=77", "wheel", "setuptools-scm>=8"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
@@ -53,7 +87,7 @@ examples = [
     "pyjwt>=2.9.0",
 ]
 build = [
-    "setuptools>=68",
+    "setuptools>=77",
     "wheel",
     "setuptools-scm>=8",
 ]

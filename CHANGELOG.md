@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **License badge (`img.shields.io/pypi/l/conditional-method`)**: `[project]`
+  declared no license, so PyPI published no licence metadata (`license` and
+  `license_expression` were both `null`, and there was no
+  `License :: OSI Approved :: MIT License` classifier for shields.io to fall
+  back to) and the badge rendered a red `license | missing`. Added the PEP 639
+  SPDX expression `license = "MIT"` together with
+  `license-files = ["LICENSE"]`, and raised the build requirement to
+  `setuptools>=77`, the release where PEP 639 support landed. The wheel now
+  carries `License-Expression: MIT` and `*.dist-info/licenses/LICENSE`; the
+  sdist carries `LICENSE` at its root.
+- **Python versions badge (`img.shields.io/pypi/pyversions/...`)**: the same
+  metadata gap. `[project].classifiers` was empty, and shields.io derives that
+  badge's version list from the `Programming Language :: Python :: X.Y` trove
+  classifiers — it never reads `requires-python` — so the badge also rendered
+  `python | missing`. Added classifiers for Python 3.9–3.14 plus
+  `Programming Language :: Python :: 3` and
+  `Programming Language :: Python :: Implementation :: CPython`.
+- Added the remaining standard trove classifiers (`Development Status :: 4 -
+  Beta`, `Intended Audience :: Developers`, `Operating System :: OS
+  Independent`, `Topic :: Software Development :: Libraries :: Python
+  Modules`, `Typing :: Typed`) and `keywords`.
+- **README badge sources.** The `pypi/*` endpoints read the metadata of the
+  *latest published release*, so both badges would have stayed red until the
+  next release was uploaded. The README now points the two affected badges at
+  sources that are already correct: the Python support range is a static badge
+  (`python-3.9 | 3.10 | 3.11 | 3.12 | 3.13 | 3.14`), and the licence is read
+  from the repository's `LICENSE` file via
+  `github/license/jymchng/conditional-method`. Either can be pointed back at
+  `pypi/pyversions` / `pypi/l` once a release carrying the metadata above is
+  published, if the self-updating form is preferred.
+
 ## [0.3.1] - 2026-08-20
 
 ### Removed
