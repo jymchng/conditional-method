@@ -4,7 +4,7 @@
 <p align="center">
 <a href="https://github.com/jymchng/conditional-method/actions/workflows/ci.yml" target="_blank"><img src="https://github.com/jymchng/conditional-method/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
 <a href="https://pypi.org/project/conditional-method" target="_blank"><img src="https://img.shields.io/pypi/v/conditional-method?color=blue" alt="PyPI version"></a>
-<a href="https://pypi.org/project/conditional-method" target="_blank"><img src="https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-blue" alt="Python versions"></a>
+<a href="https://pypi.org/project/conditional-method" target="_blank"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fpypi.org%2Fpypi%2Fconditional-method%2Fjson&query=%24.info.requires_python&label=python&color=blue" alt="Python versions"></a>
 <a href="https://pypi.org/project/conditional-method" target="_blank"><img src="https://img.shields.io/pypi/wheel/conditional-method.svg?color=blue" alt="Wheel"></a>
 <a href="https://pypi.org/project/conditional-method" target="_blank"><img src="https://img.shields.io/github/license/jymchng/conditional-method?color=blue" alt="License"></a>
 </p>

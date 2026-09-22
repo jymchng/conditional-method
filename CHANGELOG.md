@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- The README Python-versions badge now reads PyPI's `requires_python` through a
+  shields.io `dynamic/json` badge (`python | >=3.9`) rather than the interim
+  static badge released in 0.3.2. It derives its value from the same
+  `requires-python` field the package publishes, so it is self-updating and
+  cannot drift out of sync.
+
 ## [0.3.2] - 2026-09-22
 
 ### Fixed
