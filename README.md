@@ -147,6 +147,7 @@ first call:
 ```python
 from conditional_method import cfg, assert_all_true
 
+
 # Several candidates for one name: one true is enough, so `work` is fine.
 @cfg(condition=ENV == "production")
 def work(): ...
