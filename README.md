@@ -134,31 +134,43 @@ Decorators are applied in order — but only when `condition` is true.
 
 ### Fail fast at import with `assert_all_true()`
 
-For config / feature-flag modules, put `assert_all_true()` as the last
-module statement so a disabled feature raises `TypeError` at import time
-instead of at first call:
+Conditional selection happens **per name**, so a decorated name only fails when
+*all* of its candidate implementations are false — a single true candidate is
+enough. `assert_all_true()` asserts precisely that, for every decorated name at
+once: it raises `TypeError` naming only those names whose candidates were *all*
+false, and returns `None` when every name has at least one true candidate.
+
+For config / feature-flag modules, put it as the last module statement so a
+name with no true candidate raises `TypeError` at import time instead of at
+first call:
 
 ```python
 from conditional_method import cfg, assert_all_true
 
-
-@cfg(condition=ENABLE_FEATURE_A)
-def feature_a(): ...
-
-
-@cfg(condition=ENABLE_FEATURE_B)
-def feature_b(): ...
+# Several candidates for one name: one true is enough, so `work` is fine.
+@cfg(condition=ENV == "production")
+def work(): ...
 
 
-assert_all_true()  # TypeError at import if any condition is false
+@cfg(condition=ENV == "development")
+def work(): ...
+
+
+# Every candidate for this name is false: this is the one that raises.
+@cfg(condition=False)
+def broken(): ...
+
+
+assert_all_true()  # TypeError: reports `broken` only, not `work`
 ```
 
-Use `_get_failed()` to inspect which names are affected:
+Use `_get_failed()` (public alias `pending_failures()`) to inspect which names
+are affected:
 
 ```python
 from conditional_method import _get_failed
 
-_get_failed()  # e.g. ['__main__.feature_a']
+_get_failed()  # e.g. ['__main__.broken']
 ```
 
 More examples live in the `examples/` directory and in the

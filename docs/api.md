@@ -52,10 +52,14 @@ name can be determined.
 
 ### `assert_all_true() -> None`
 
-Eager module-level validation: raises `TypeError` naming **every** decorated
-name whose condition is false (i.e. that ended up as a `_TypeErrorRaiser`
-with no `condition=True` winner). Returns `None` when all conditions are
-true.
+Eager module-level validation. Selection is **per name**, so a decorated name
+fails only when *all* of its candidate implementations are false; a single true
+candidate is enough.
+
+Raises `TypeError` naming **every** decorated name that ended up as a
+`_TypeErrorRaiser` with no `condition=True` winner (i.e. every name whose
+candidates were all false). A name with at least one true candidate is never
+reported. Returns `None` when every decorated name is satisfied.
 
 Call it as the last line of a config/feature-flag module to fail fast at
 import time instead of at first call:
@@ -64,15 +68,21 @@ import time instead of at first call:
 from conditional_method import cfg, assert_all_true
 
 
-@cfg(condition=ENABLE_FEATURE_A)
-def feature_a(): ...
+# One true candidate is enough, so `work` is NOT reported.
+@cfg(condition=ENV == "production")
+def work(): ...
 
 
-@cfg(condition=ENABLE_FEATURE_B)
-def feature_b(): ...
+@cfg(condition=ENV == "development")
+def work(): ...
 
 
-assert_all_true()  # raises TypeError at import if any feature is disabled
+# Every candidate for this name is false, so `broken` IS reported.
+@cfg(condition=False)
+def broken(): ...
+
+
+assert_all_true()  # TypeError naming `broken` only
 ```
 
 ### `_get_failed() -> list[str]`

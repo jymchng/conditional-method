@@ -266,3 +266,63 @@ def test_assert_all_true_alloc_fail():
         assert raised, "no MemoryError raised across the guard sweep"
     finally:
         _c.set_alloc_fail_count(-1)
+
+
+def test_at_least_one_true_candidate_is_enough():
+    """The contract is per name: a name is a failure only when *all* of its
+    candidate implementations are false.  One true candidate is enough, no
+    matter how many false candidates surround it."""
+
+    @cfg(condition=False)
+    def pick():  # noqa: F811
+        return "false-1"
+
+    @cfg(condition=False)
+    def pick():  # noqa: F811
+        return "false-2"
+
+    @cfg(condition=True)
+    def pick():  # noqa: F811
+        return "true"
+
+    assert _get_failed() == []
+    assert assert_all_true() is None
+    assert pick() == "true"
+
+
+def test_true_candidate_declared_first_is_not_a_failure():
+    """Regression: a false candidate declared *after* a true one must not
+    resurrect the name as a failure.  ``cm`` only installs a raiser when the
+    cache holds no live winner for that qualname, so declaration order is
+    irrelevant to the assertion."""
+
+    @cfg(condition=True)
+    def pick_first():  # noqa: F811
+        return "true"
+
+    @cfg(condition=False)
+    def pick_first():  # noqa: F811
+        return "false"
+
+    assert _get_failed() == []
+    assert assert_all_true() is None
+    assert pick_first() == "true"
+
+
+def test_class_multi_candidate_with_one_true_is_clean():
+    """The README's canonical class pattern: several ``@cfg`` candidates for a
+    single method, exactly one of which is true.  The eager validation must
+    not report it."""
+
+    class Worker:
+        @cfg(condition=False)
+        def work(self):  # noqa: F811
+            return "production"
+
+        @cfg(condition=True)
+        def work(self):  # noqa: F811
+            return "development"
+
+    assert _get_failed() == []
+    assert assert_all_true() is None
+    assert Worker().work() == "development"

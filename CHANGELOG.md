@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **`assert_all_true()` docs contradicted its (correct) behaviour.** Condition
+  selection is per name, so a decorated name only fails when *all* of its
+  candidate implementations are false — a single true candidate is enough. The
+  extension already behaved this way: `cm` returns the cached winner for a
+  false candidate and only installs a `_TypeErrorRaiser` when the cache holds
+  no live winner for that qualname, and a later `condition=True` winner
+  discards the recorded failure. The README nonetheless claimed
+  `assert_all_true()` raises "if any condition is false", which reads as "every
+  candidate must be true" and is wrong for the library's multi-candidate
+  pattern. The README and `docs/api.md` now state the contract precisely, and
+  three regression tests pin it: one true candidate among several false, a true
+  candidate declared *before* the false ones, and the canonical class pattern.
+
 ### Changed
 - The README Python-versions badge now reads PyPI's `requires_python` through a
   shields.io `dynamic/json` badge (`python | >=3.9`) rather than the interim
