@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-09-22
+
 ### Fixed
 - **`assert_all_true()` docs contradicted its (correct) behaviour.** Condition
   selection is per name, so a decorated name only fails when *all* of its
